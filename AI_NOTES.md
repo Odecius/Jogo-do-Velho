@@ -2,7 +2,7 @@
 
 ## Estado
 
-O projeto está iniciando a Fase B. Não há regras de jogo, SignalR ou upload implementados.
+O projeto concluiu a Fase B localmente. Build, seis testes, format, Docker e health checks foram validados. Não há regras de jogo, SignalR ou upload implementados.
 
 ## Restrições permanentes
 
@@ -11,4 +11,3 @@ O projeto está iniciando a Fase B. Não há regras de jogo, SignalR ou upload i
 - Não alterar projetos irmãos em `C:\Projetos\Abc`.
 - Não acessar produção sem autorização de fase específica.
 - Não registrar selfies, tokens, cookies ou segredos.
-

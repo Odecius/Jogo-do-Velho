@@ -4,7 +4,7 @@ MVP experimental de um jogo da velha multiplayer no qual duas pessoas usarão se
 
 ## Estado atual
 
-Fase B — foundation técnica e documental. O jogo, o multiplayer e o upload de selfies ainda não estão implementados.
+Fase B — foundation técnica e documental concluída localmente. O jogo, o multiplayer e o upload de selfies ainda não estão implementados.
 
 ## Stack planejada
 
@@ -19,9 +19,24 @@ Fase B — foundation técnica e documental. O jogo, o multiplayer e o upload de
 
 A solution será dividida em `Domain`, `Infrastructure` e `Web`, com projetos separados para testes unitários e de integração. Consulte `docs/architecture.md` e `DECISIONS.md`.
 
-## Execução e testes
+## Execução local
 
-As instruções serão mantidas em `docs/setup.md` e `docs/testing.md` à medida que a foundation técnica for adicionada nesta fase.
+Copie `.env.example` para `.env`, substitua a senha de exemplo e execute:
+
+```powershell
+docker compose up --build -d
+```
+
+A aplicação estará em `http://127.0.0.1:8080`. Consulte `docs/setup.md`.
+
+## Testes
+
+```powershell
+dotnet restore
+dotnet build
+dotnet test
+dotnet format --verify-no-changes
+```
 
 ## Privacidade
 
@@ -32,7 +47,7 @@ Selfies serão dados pessoais temporários, sem reconhecimento ou análise facia
 - nenhuma regra de jogo implementada;
 - nenhum fluxo multiplayer;
 - nenhum upload de imagem;
-- nenhuma persistência de partidas;
+- `DbContext` configurado, mas ainda sem entidades ou migrations;
 - nenhum deploy realizado.
 
 ## Roadmap
@@ -42,4 +57,3 @@ Consulte `ROADMAP.md`.
 **Production deployment: not performed**
 
 Developed by Abc Solutions | Built with quality and care
-
