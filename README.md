@@ -4,7 +4,7 @@ MVP experimental de um jogo da velha multiplayer no qual duas pessoas usarão se
 
 ## Estado atual
 
-Fase B — foundation técnica e documental concluída localmente. O jogo, o multiplayer e o upload de selfies ainda não estão implementados.
+Fase C — regras puras do jogo concluídas localmente. Multiplayer e upload de selfies ainda não estão implementados.
 
 ## Stack planejada
 
@@ -44,7 +44,7 @@ Selfies serão dados pessoais temporários, sem reconhecimento ou análise facia
 
 ## Limitações atuais
 
-- nenhuma regra de jogo implementada;
+- engine disponível somente como biblioteca de domínio, ainda sem interface de jogo;
 - nenhum fluxo multiplayer;
 - nenhum upload de imagem;
 - `DbContext` configurado, mas ainda sem entidades ou migrations;

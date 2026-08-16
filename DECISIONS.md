@@ -24,3 +24,14 @@ Usar `agent/jogo-do-velho-foundation` por instrução específica do projeto. Es
 
 As imagens ficarão fora de diretórios executáveis, com retenção planejada de 24 horas, validação real do conteúdo e remoção automática. A implementação ocorrerá em fase posterior.
 
+## 2026-08-16 — Engine pura do jogo
+
+O domínio usa `Game`, `Board`, `PlayerPosition`, `GameStatus` e `MoveResult`, sem dependências de infraestrutura. O tabuleiro possui nove células indexadas de 0 a 8. `Player1` sempre começa.
+
+Erros esperados de gameplay são retornados por `MoveResult`: `Success`, `InvalidCell`, `NotPlayersTurn`, `CellOccupied` e `GameFinished`. O domínio não contém mensagens de interface nem usa exceptions para esses fluxos.
+
+A engine começa diretamente em `InProgress`; `Waiting` pertence à coordenação multiplayer e não ao estado lógico de uma rodada. Os estados terminais são `Won` e `Draw`.
+
+O array interno do tabuleiro não é exposto. Consumidores recebem uma coleção somente leitura, e toda mutação passa por `Game.PlaceMove`. A engine é síncrona e não implementa locks; concorrência será tratada pela camada coordenadora futura.
+
+Uma nova rodada será representada por uma nova instância de `Game`, sem método `Reset`, reduzindo mutabilidade e evitando estado residual.
