@@ -10,3 +10,8 @@
 
 Dependências permitidas: `Infrastructure` referencia `Domain`; `Web` referencia ambos. `Domain` não referencia outros projetos da solution.
 
+## Multiplayer
+
+O fluxo é `browser → GameHub → GameSessionManager → Domain.Game`. O Hub não contém regras do jogo. O coordenador mantém salas e conexões em memória, usa um lock por partida e produz snapshots personalizados para grupos SignalR internos de Player1 e Player2.
+
+PostgreSQL persiste somente metadados de jogos e jogadores. Partidas ativas e sessões são deliberadamente voláteis.

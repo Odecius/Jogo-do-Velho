@@ -4,12 +4,12 @@ MVP experimental de um jogo da velha multiplayer no qual duas pessoas usarão se
 
 ## Estado atual
 
-Fase C — regras puras do jogo concluídas localmente. Multiplayer e upload de selfies ainda não estão implementados.
+Fase D — primeiro multiplayer funcional concluído localmente. Selfies e upload ainda não estão implementados.
 
 ## Stack planejada
 
 - .NET 8 e ASP.NET Core 8;
-- SignalR (fase futura);
+- SignalR para atualização multiplayer em tempo real;
 - HTML, CSS e JavaScript vanilla;
 - PostgreSQL, Entity Framework Core e Npgsql;
 - xUnit para testes;
@@ -44,8 +44,8 @@ Selfies serão dados pessoais temporários, sem reconhecimento ou análise facia
 
 ## Limitações atuais
 
-- engine disponível somente como biblioteca de domínio, ainda sem interface de jogo;
-- nenhum fluxo multiplayer;
+- partidas e sessões ativas são perdidas quando a aplicação reinicia;
+- o frontend usa marcadores temporários `P1` e `P2`;
 - nenhum upload de imagem;
 - `DbContext` configurado, mas ainda sem entidades ou migrations;
 - nenhum deploy realizado.

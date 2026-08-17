@@ -35,3 +35,27 @@ A engine começa diretamente em `InProgress`; `Waiting` pertence à coordenaçã
 O array interno do tabuleiro não é exposto. Consumidores recebem uma coleção somente leitura, e toda mutação passa por `Game.PlaceMove`. A engine é síncrona e não implementa locks; concorrência será tratada pela camada coordenadora futura.
 
 Uma nova rodada será representada por uma nova instância de `Game`, sem método `Reset`, reduzindo mutabilidade e evitando estado residual.
+
+## 2026-08-17 — Coordenação multiplayer em memória
+
+`GameSessionManager` mantém salas, engine ativa, sessões e conexões em memória. Cada sala possui seu próprio `SemaphoreSlim`, garantindo uma mutação por vez sem bloquear partidas diferentes. Reiniciar a aplicação encerra partidas e invalida sessões ativas; Redis não será usado no MVP.
+
+O estado da sala (`WaitingForPlayer`, `Playing`, `Finished`) representa presença e ciclo multiplayer, enquanto `Domain.GameStatus` representa somente as regras da rodada (`InProgress`, `Won`, `Draw`).
+
+## 2026-08-17 — Códigos e identidade temporária
+
+Códigos públicos usam oito caracteres de um alfabeto sem `0`, `O`, `1`, `I` e `L`, gerados com `RandomNumberGenerator` e comparados sem diferença entre maiúsculas e minúsculas. Eles permitem localizar uma sala, mas não autorizam jogadas.
+
+Cada jogador recebe token opaco de 256 bits em cookie `HttpOnly`, `SameSite=Lax`, `Secure` fora de Development/Testing e validade de oito horas. Tokens ficam somente em memória e não aparecem em URL, resposta JSON, DOM ou logs.
+
+## 2026-08-17 — SignalR e snapshots personalizados
+
+O Hub expõe somente `JoinGame(publicCode)` e `PlaceMove(cellIndex)`. O jogador é determinado pelo cookie; posição ou ID não são aceitos do cliente. Cada posição possui grupo interno baseado no `GameId`, permitindo snapshots com `YouAre` sem expor IDs internos. Os eventos são `GameStateChanged` e `MoveRejected`.
+
+Reconnect reutiliza a sessão e reassocia uma nova conexão. Disconnect apenas atualiza presença e não libera a vaga nem causa derrota.
+
+## 2026-08-17 — Persistência mínima e proteção HTTP
+
+PostgreSQL guarda somente metadados de `GameEntity` e `PlayerEntity`; jogadas e tokens não são persistidos. A migration inicial é `InitialGameMetadata`.
+
+Criação e entrada usam antiforgery por cookie/header. O frontend obtém um request token em `/api/antiforgery`. SignalR não usa antiforgery porque sua autorização depende do cookie `SameSite` e da validação server-side da sessão no Hub. Rate limiting fixo protege criação e entrada.

@@ -8,7 +8,7 @@
 - [x] Adicionar health checks e testes de integração.
 - [x] Executar todas as validações da foundation.
 
-Funcionalidades do jogo pertencem às fases posteriores e não devem ser antecipadas.
+Selfies, avatares e rematch pertencem às fases posteriores e não devem ser antecipados.
 
 ## Fase C — Domain
 
@@ -18,3 +18,13 @@ Funcionalidades do jogo pertencem às fases posteriores e não devem ser antecip
 - [x] Detectar as oito vitórias e empate.
 - [x] Proteger o estado contra alteração externa.
 - [x] Adicionar cobertura unitária das regras.
+
+## Fase D — Multiplayer
+
+- [x] Criar e entrar em salas com código público criptográfico.
+- [x] Associar Player1 e Player2 a sessões privadas temporárias.
+- [x] Coordenar jogadas concorrentes usando lock por sala.
+- [x] Transmitir snapshots personalizados com SignalR.
+- [x] Persistir metadados mínimos de jogos e jogadores.
+- [x] Adicionar antiforgery, rate limiting e interface multiplayer mínima.
+- [x] Cobrir HTTP e SignalR com testes de integração.
