@@ -8,13 +8,28 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <main>
+  <main class="card">
     <p class="eyebrow">ABC Solutions</p>
     <h1>Jogo do Velho</h1>
-    <p>Project foundation running.</p>
-    <span class="status">Foundation local</span>
+    <section id="home-view">
+      <p>Crie uma partida e convide outra pessoa para jogar em tempo real.</p>
+      <button id="create-game" class="primary" type="button">Criar partida</button>
+    </section>
+    <section id="game-view" hidden>
+      <p class="label">Código da partida</p>
+      <strong id="public-code" class="code"></strong>
+      <div class="share-row">
+        <input id="join-link" readonly aria-label="Link para entrar na partida">
+        <button id="copy-link" type="button">Copiar link</button>
+      </div>
+      <p id="game-message" class="message" aria-live="polite">Conectando…</p>
+      <div id="board" class="board" aria-label="Tabuleiro do jogo da velha"></div>
+      <div class="players"><span id="player1-status">P1 offline</span><span id="player2-status">P2 offline</span></div>
+    </section>
+    <p id="error-message" class="error" role="alert"></p>
   </main>
   <footer>Developed by Abc Solutions | Built with quality and care</footer>
+  <script src="/signalr.min.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
-
