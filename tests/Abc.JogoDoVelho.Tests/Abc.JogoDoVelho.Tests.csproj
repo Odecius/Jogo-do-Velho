@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Abc.JogoDoVelho.Domain\Abc.JogoDoVelho.Domain.csproj" />
     <ProjectReference Include="..\..\src\Abc.JogoDoVelho.Infrastructure\Abc.JogoDoVelho.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Abc.JogoDoVelho.Web\Abc.JogoDoVelho.Web.csproj" />
   </ItemGroup>
 
 </Project>
