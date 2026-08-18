@@ -19,7 +19,14 @@ Todas as mudanças relevantes serão registradas neste arquivo.
 - Endpoints protegidos por antiforgery e rate limiting.
 - Persistência mínima de metadados com migration `InitialGameMetadata`.
 - Frontend responsivo para criação, compartilhamento e partida com `P1`/`P2`.
-# Changelog
+
+## 2026-08-18 — Fase F
+
+- home, lobby e convite final com Clipboard e Web Share opcional;
+- estados amigáveis para entrada, upload, turno, disconnect e reconnect;
+- resultado, placar em memória e rematch consentido com nova instância de `Game`;
+- interface responsiva, acessível por teclado e avatares como foco do tabuleiro;
+- testes de rematch, placar, reconnect e fluxo integrado completo.
 
 ## 2026-08-18 — Fase E
 

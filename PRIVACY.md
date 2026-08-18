@@ -16,3 +16,5 @@ As selfies serão usadas exclusivamente como avatares visuais durante partidas. 
 - logs sem imagem, nome original, token ou conteúdo pessoal.
 
 O nome original nunca é armazenado. O volume temporário de avatares não deve integrar backups de longo prazo.
+
+Rematch reutiliza os mesmos avatares enquanto ainda estiverem válidos e não prolonga automaticamente sua expiração. Placar e consentimentos existem somente na memória da sala e não criam histórico permanente.

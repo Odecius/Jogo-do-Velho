@@ -8,8 +8,6 @@
 - [x] Adicionar health checks e testes de integração.
 - [x] Executar todas as validações da foundation.
 
-Selfies, avatares e rematch pertencem às fases posteriores e não devem ser antecipados.
-
 ## Fase C — Domain
 
 - [x] Modelar jogadores, tabuleiro e estados.
@@ -28,3 +26,15 @@ Selfies, avatares e rematch pertencem às fases posteriores e não devem ser ant
 - [x] Persistir metadados mínimos de jogos e jogadores.
 - [x] Adicionar antiforgery, rate limiting e interface multiplayer mínima.
 - [x] Cobrir HTTP e SignalR com testes de integração.
+
+## Fase E — Avatares
+
+- [x] Validar, normalizar e armazenar avatares temporários.
+- [x] Adicionar câmera, fallback de arquivo e cleanup automático.
+
+## Fase F — Fluxo final
+
+- [x] Melhorar home, lobby, convite e mensagens de erro.
+- [x] Adicionar rematch com consentimento dos dois jogadores.
+- [x] Adicionar placar volátil da sessão.
+- [x] Cobrir reconnect, refresh lógico e fluxo multiplayer completo.

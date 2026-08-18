@@ -67,3 +67,11 @@ Usar ImageSharp 3.1.12, compatível com .NET 8 e sem dependência de `System.Dra
 O servidor aceita JPEG, PNG e WebP de até 5 MiB e 4096 × 4096, exige concordância entre MIME, magic bytes e decoder, aplica orientação e crop central, remove EXIF/XMP/IPTC/ICC e guarda somente WebP 512 × 512. Arquivos recebem GUID e ficam em `storage/avatars`, fora de `wwwroot`.
 
 A partida fica `WaitingForAvatars` até dois jogadores e dois avatares estarem presentes. Substituição é permitida antes de `Playing` e bloqueada depois. `Domain.GameStatus` não foi alterado. A retenção é de 24 horas, com cleanup a cada 15 minutos. O volume temporário não deve ser incluído em backups permanentes.
+
+## 2026-08-18 — Rematch e placar voláteis
+
+Cada jogador solicita rematch pelo mesmo método SignalR. Uma solicitação isolada apenas atualiza o snapshot; somente o consentimento dos dois cria uma nova instância de `Domain.Game`. Avatares e sessões são preservados, flags são limpas e Player1 começa novamente.
+
+Vitórias e empates são contabilizados somente na sala em memória. Não há tabela de rodada, histórico persistente ou alteração no Domain. Reiniciar a aplicação zera o placar e encerra a sala.
+
+Convites usam `window.location.origin`, Clipboard API com fallback por seleção e Web Share API quando disponível. QR Code permanece no roadmap para evitar dependência e escopo adicionais.

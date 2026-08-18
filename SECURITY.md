@@ -34,3 +34,7 @@ Não publique credenciais ou dados pessoais em issues. Comunique o responsável 
 ## Produção
 
 Nenhum deploy foi realizado. Configurações de produção não fazem parte da foundation local.
+
+## UX multiplayer
+
+Refresh, reconnect e rematch reutilizam exclusivamente o cookie opaco existente; nenhum token é enviado em URL, DOM ou snapshot. O servidor continua validando turno, estado da rodada e identidade, independentemente dos bloqueios visuais do tabuleiro. Um terceiro jogador continua sem acesso mesmo após disconnect ou refresh.

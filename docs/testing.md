@@ -1,6 +1,6 @@
 # Testes
 
-Os testes cobrem configuração, domínio, coordenação concorrente, endpoints HTTP, antiforgery, rate limiting e um fluxo SignalR real com dois clientes independentes. `/ready` e migrations são validados com PostgreSQL real pelo Compose. Upload continua fora do escopo.
+Os testes cobrem configuração, domínio, coordenação concorrente, endpoints HTTP, antiforgery, rate limiting e fluxos SignalR com dois clientes independentes. Incluem vitória, empate, placar, consentimento de rematch, nova rodada, reconnect com a mesma sessão e rejeição de terceiro jogador. `/ready` e migrations são validados com PostgreSQL real pelo Compose.
 
 Comandos previstos:
 

@@ -18,3 +18,7 @@ PostgreSQL persiste somente metadados de jogos e jogadores. Partidas ativas e se
 ## Avatares temporários
 
 `AvatarImageProcessor` valida e normaliza imagens; `FileSystemAvatarStorage` restringe operações à raiz configurada; `EfAvatarMetadataStore` persiste somente referência, MIME e timestamps. O endpoint nunca publica o diretório físico. `AvatarCleanupService` remove itens expirados e limpa metadados. O estado ativo continua em memória e uma partida só fica jogável com dois jogadores e dois avatares.
+
+## Rodadas e rematch
+
+`GameSessionManager` mantém placar, número da rodada e consentimentos de rematch dentro da sala. Quando ambos consentem, substitui a referência por `new Domain.Game()`, preservando jogadores, sessões e avatares. Snapshots personalizados continuam sendo a única fonte de verdade do frontend. Refresh/reconnect reutiliza o cookie da sessão, troca a connection ID e recupera o snapshot atual.

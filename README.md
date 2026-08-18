@@ -4,7 +4,7 @@ MVP experimental de um jogo da velha multiplayer no qual duas pessoas usarão se
 
 ## Estado atual
 
-Fase E — avatares temporários com upload seguro, câmera, limpeza automática e tabuleiro com selfies concluídos localmente.
+Fase F — fluxo completo de criação, convite, avatar, partida, resultado e rematch concluído localmente.
 
 ## Stack planejada
 
@@ -46,7 +46,7 @@ Selfies são avatares pessoais temporários, sem reconhecimento ou análise faci
 
 - partidas e sessões ativas são perdidas quando a aplicação reinicia;
 - avatares dependem do filesystem local e não suportam múltiplas instâncias;
-- partidas, sessões e associação dos avatares ativos são perdidas ao reiniciar;
+- placar e rodadas de rematch existem somente em memória durante a sessão;
 - nenhum deploy realizado.
 
 ## Roadmap
