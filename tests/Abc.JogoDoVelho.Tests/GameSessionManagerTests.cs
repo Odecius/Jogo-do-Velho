@@ -1,7 +1,9 @@
 using Abc.JogoDoVelho.Domain;
 using Abc.JogoDoVelho.Infrastructure.Persistence;
+using Abc.JogoDoVelho.Infrastructure.Avatars;
 using Abc.JogoDoVelho.Web.Multiplayer;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Abc.JogoDoVelho.Tests;
 
@@ -74,6 +76,7 @@ public sealed class GameSessionManagerTests
         var manager = CreateManager();
         var first = await manager.CreateGameAsync();
         var second = await manager.JoinGameAsync(first.PublicCode, null);
+        await AddBothAvatars(manager, first, second);
         await manager.ConnectAsync(first.PublicCode, first.PlayerToken, "p1");
         var snapshots = await manager.ConnectAsync(first.PublicCode, second.PlayerToken!, "p2");
 
@@ -103,7 +106,8 @@ public sealed class GameSessionManagerTests
     {
         var manager = CreateManager();
         var first = await manager.CreateGameAsync();
-        await manager.JoinGameAsync(first.PublicCode, null);
+        var joined = await manager.JoinGameAsync(first.PublicCode, null);
+        await AddBothAvatars(manager, first, joined);
 
         var results = await Task.WhenAll(
             manager.PlaceMoveAsync(first.PlayerToken, 0),
@@ -131,8 +135,26 @@ public sealed class GameSessionManagerTests
         Assert.All(reconnected!, item => Assert.True(item.Snapshot.Player2Connected));
     }
 
+    private static async Task AddBothAvatars(GameSessionManager manager, CreatedGame first, JoinGameResult second)
+    {
+        await manager.SetAvatarAsync(first.PublicCode, first.PlayerToken, "one.webp", "image/webp");
+        await manager.SetAvatarAsync(first.PublicCode, second.PlayerToken!, "two.webp", "image/webp");
+    }
+
     private static GameSessionManager CreateManager() => new(
-        new FakeMetadataStore(), TimeProvider.System, NullLogger<GameSessionManager>.Instance);
+        new FakeMetadataStore(), new FakeAvatarMetadataStore(), TimeProvider.System, Options.Create(new AvatarOptions()),
+        NullLogger<GameSessionManager>.Instance);
+
+    private sealed class FakeAvatarMetadataStore : IAvatarMetadataStore
+    {
+        public Task<string?> SetAsync(Guid playerId, string storageName, string contentType,
+            DateTimeOffset uploadedAtUtc, DateTimeOffset expiresAtUtc, CancellationToken cancellationToken = default) =>
+            Task.FromResult<string?>(null);
+        public Task<IReadOnlyList<ExpiredAvatar>> GetExpiredAsync(DateTimeOffset now,
+            CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ExpiredAvatar>>([]);
+        public Task ClearAsync(Guid playerId, string storageName,
+            CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
 
     private sealed class FakeMetadataStore : IGameMetadataStore
     {

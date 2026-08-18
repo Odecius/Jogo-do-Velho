@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.Extensions.DependencyInjection;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace Abc.JogoDoVelho.IntegrationTests;
 
@@ -22,6 +25,8 @@ public sealed class SignalRGameTests : IClassFixture<FoundationWebApplicationFac
     {
         var first = await CreatePlayerOneAsync();
         var second = await JoinPlayerTwoAsync(first.Created.PublicCode);
+        await UploadAvatarAsync(first.Created.PublicCode, first.Cookies);
+        await UploadAvatarAsync(first.Created.PublicCode, second);
         await using var firstHub = CreateHub(first.Cookies);
         await using var secondHub = CreateHub(second);
         var firstStates = Channel.CreateUnbounded<GameSnapshot>();
@@ -89,6 +94,26 @@ public sealed class SignalRGameTests : IClassFixture<FoundationWebApplicationFac
         })
         .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
         .Build();
+
+    private async Task UploadAvatarAsync(string publicCode, CookieContainer cookies)
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("Cookie", cookies.GetCookieHeader(new Uri("http://localhost")));
+        using var tokenResponse = await client.GetAsync("/api/antiforgery");
+        var token = (await tokenResponse.Content.ReadFromJsonAsync<System.Text.Json.JsonDocument>())!
+            .RootElement.GetProperty("requestToken").GetString();
+        using var image = new Image<Rgba32>(32, 32, Color.Teal);
+        await using var bytes = new MemoryStream();
+        await image.SaveAsync(bytes, new PngEncoder());
+        using var form = new MultipartFormDataContent();
+        var content = new ByteArrayContent(bytes.ToArray());
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        form.Add(content, "avatar", "artificial.png");
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/games/{publicCode}/avatar") { Content = form };
+        request.Headers.Add("X-CSRF-TOKEN", token);
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+    }
 
     private static CookieContainer ReadCookies(HttpResponseMessage response)
     {
