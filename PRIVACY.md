@@ -20,3 +20,5 @@ O nome original nunca é armazenado. O volume temporário de avatares não deve 
 Rematch reutiliza os mesmos avatares enquanto ainda estiverem válidos e não prolonga automaticamente sua expiração. Placar e consentimentos existem somente na memória da sala e não criam histórico permanente.
 
 Uma sala inativa expira em até 24 horas, removendo suas sessões em memória e antecipando a remoção dos avatars associados. Não há analytics, reconhecimento facial, persistência de IP ou publicação pública das imagens.
+
+O fluxo com fotos reais foi validado em produção por dois participantes, sem registrar nomes, imagens ou outros dados pessoais no repositório ou na documentação. O cleanup também foi confirmado separadamente com imagem artificial: após expiração controlada, o arquivo foi removido e a metadata foi limpa.

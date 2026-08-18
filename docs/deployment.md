@@ -28,4 +28,8 @@ Valide `/health`, `/ready`, assets, criação de partida, SignalR, cookies, uplo
 
 ## Riscos residuais
 
-Partidas, placar e sessões ativas estão em memória e são perdidos em restart. Chaves de Data Protection são efêmeras. Há uma única instância e o rate limiting não é distribuído. A validação final com dois dispositivos físicos e webcam real pertence à Fase J.
+Partidas, placar e sessões ativas estão em memória e são perdidos em restart. Chaves de Data Protection são efêmeras. Há uma única instância e o rate limiting não é distribuído.
+
+## Validação final
+
+A Fase J confirmou em produção dois jogadores reais em redes/localizações distintas, convite, fotos, partida e placar sincronizados. Refresh preservou a sessão e o cleanup real foi validado com avatar artificial isolado. As limitações de estado em memória, instância única, ausência de escala horizontal, rate limiting não distribuído e ausência de histórico persistente permanecem.

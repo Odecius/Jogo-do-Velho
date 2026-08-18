@@ -4,7 +4,7 @@ MVP experimental de um jogo da velha multiplayer no qual duas pessoas usarão se
 
 ## Estado atual
 
-Fase I — MVP publicado em produção com deploy isolado, proxy reverso, HTTPS no edge e validação pública controlada.
+Fase J concluída — MVP publicado e validado em produção com dois jogadores reais em redes/localizações diferentes.
 
 ## Funcionalidades
 
@@ -79,7 +79,10 @@ Selfies são avatares pessoais temporários, sem reconhecimento ou análise faci
 - uma única instância da aplicação; sem escala horizontal ou limite distribuído de SignalR;
 - salas expiram após 24 horas de inatividade;
 - a sessão antiforgery não persiste entre reinícios; partidas ativas também são encerradas;
-- validação final em dois dispositivos físicos e webcam real permanece para a Fase J.
+
+## Validação final
+
+Convite público, fotos reais dos dois participantes, partida e placar sincronizados foram confirmados em produção. Refresh preservou identidade, posição e snapshot da sessão; o cleanup removeu arquivo e metadata de um avatar artificial expirado. Nenhum nome, foto ou dado pessoal foi versionado.
 
 ## Roadmap
 

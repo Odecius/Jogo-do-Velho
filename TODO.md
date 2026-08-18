@@ -45,4 +45,11 @@
 - [x] Publicar pelo proxy reverso e Cloudflare Tunnel com HTTPS.
 - [x] Validar health, readiness, assets, SignalR, cookies e avatar pela rota pública.
 - [x] Documentar operação, rollback e riscos residuais.
-- [ ] Executar validação em dois dispositivos físicos e webcam real na Fase J.
+- [x] Executar validação real com dois jogadores, redes diferentes, convite, fotos, partida e placar.
+
+## Fase J — Fechamento
+
+- [x] Validar refresh/reconnect preservando a sessão.
+- [x] Validar cleanup real com dados artificiais isolados.
+- [x] Revisar logs, health, containers e estado Git.
+- [x] Alinhar a documentação ao estado final.

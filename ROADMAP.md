@@ -10,13 +10,13 @@
 - [Concluído] Vitória, empate e rematch.
 - [Concluído] Limpeza automática das imagens.
 - [Concluído] Deploy público controlado, HTTPS e smoke tests externos.
+- [Concluído] Validação real com dois jogadores, fotos, partida, placar, refresh e cleanup.
 
 ## Futuro
 
 - QR Code.
 - Observabilidade ampliada e alertas operacionais.
 - Conclusão da revisão e merge no GitHub, somente após aprovação.
-- Validação em Chrome/Edge, dispositivos reais e webcam física.
 - Rate limiting distribuído para HTTP/SignalR no edge.
 - Escala horizontal com estado compartilhado, se necessária.
 - Histórico persistente de partidas e placar.
