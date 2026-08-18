@@ -23,6 +23,21 @@
         <button id="copy-link" type="button">Copiar link</button>
       </div>
       <p id="game-message" class="message" aria-live="polite">Conectando…</p>
+      <section id="avatar-panel" class="avatar-panel">
+        <h2>Sua foto</h2>
+        <p>Sua foto será usada apenas como avatar desta partida e apagada automaticamente em até 24 horas.</p>
+        <img id="avatar-preview" class="avatar-preview" alt="Prévia do seu avatar" hidden>
+        <video id="camera-preview" class="camera-preview" autoplay playsinline hidden></video>
+        <canvas id="capture-canvas" hidden></canvas>
+        <div class="avatar-actions">
+          <button id="start-camera" type="button">Tirar selfie</button>
+          <label class="file-button" for="photo-file">Escolher foto</label>
+          <input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <button id="capture-photo" type="button" hidden>Capturar</button>
+          <button id="cancel-camera" type="button" hidden>Cancelar</button>
+          <button id="upload-avatar" class="primary" type="button" hidden>Usar esta foto</button>
+        </div>
+      </section>
       <div id="board" class="board" aria-label="Tabuleiro do jogo da velha"></div>
       <div class="players"><span id="player1-status">P1 offline</span><span id="player2-status">P2 offline</span></div>
     </section>

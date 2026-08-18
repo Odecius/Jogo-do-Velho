@@ -2,12 +2,16 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using Abc.JogoDoVelho.Domain;
 using Abc.JogoDoVelho.Infrastructure.Persistence;
+using Abc.JogoDoVelho.Infrastructure.Avatars;
+using Microsoft.Extensions.Options;
 
 namespace Abc.JogoDoVelho.Web.Multiplayer;
 
 public sealed class GameSessionManager(
     IGameMetadataStore metadataStore,
+    IAvatarMetadataStore avatarMetadataStore,
     TimeProvider timeProvider,
+    IOptions<AvatarOptions> avatarOptions,
     ILogger<GameSessionManager> logger) : IGameSessionManager
 {
     private const string CodeAlphabet = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
@@ -33,7 +37,7 @@ public sealed class GameSessionManager(
             throw;
         }
 
-        _players[player.Token] = new PlayerIdentity(session.Id, player.Position);
+        _players[player.Token] = new PlayerIdentity(session.Id, player.Id, player.Position);
         GameSessionLog.GameCreated(logger, session.Id);
         return new CreatedGame(session.PublicCode, $"/game/{session.PublicCode}", player.Token);
     }
@@ -57,7 +61,7 @@ public sealed class GameSessionManager(
             var player = Player.Create(PlayerPosition.Player2);
             await metadataStore.AddPlayerAsync(session.Id, player.Id, (int)player.Position, joinedAt, cancellationToken);
             session.Players[player.Position] = player;
-            _players[player.Token] = new PlayerIdentity(session.Id, player.Position);
+            _players[player.Token] = new PlayerIdentity(session.Id, player.Id, player.Position);
             GameSessionLog.PlayerJoined(logger, session.Id);
             return new JoinGameResult(JoinOutcome.Success, player.Token);
         }
@@ -113,7 +117,7 @@ public sealed class GameSessionManager(
         await session.Gate.WaitAsync(cancellationToken);
         try
         {
-            if (!session.Players.ContainsKey(PlayerPosition.Player2))
+            if (RoomState(session) is not RoomStatus.Playing)
                 return new MoveGameResult(MoveOutcome.RoomNotReady, Snapshots(session));
 
             var result = session.Game.PlaceMove(identity.Position, cellIndex);
@@ -129,6 +133,59 @@ public sealed class GameSessionManager(
         finally { session.Gate.Release(); }
     }
 
+    public async Task<AvatarUpdateResult?> SetAvatarAsync(string publicCode, string playerToken, string storageName,
+        string contentType, CancellationToken cancellationToken = default)
+    {
+        if (!TryResolvePlayer(playerToken, out var identity) ||
+            !_games.TryGetValue(Normalize(publicCode), out var session) || identity.GameId != session.Id) return null;
+        await session.Gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (RoomState(session) is RoomStatus.Playing or RoomStatus.Finished)
+                return new AvatarUpdateResult(false, "GameAlreadyStarted", null, Snapshots(session));
+            var now = timeProvider.GetUtcNow();
+            var previous = await avatarMetadataStore.SetAsync(identity.PlayerId, storageName, contentType,
+                now, now.AddHours(avatarOptions.Value.RetentionHours), cancellationToken);
+            var player = session.Players[identity.Position];
+            player.AvatarStorageName = storageName;
+            player.AvatarContentType = contentType;
+            return new AvatarUpdateResult(true, null, previous, Snapshots(session));
+        }
+        finally { session.Gate.Release(); }
+    }
+
+    public async Task<AvatarAccess?> GetAvatarAsync(string publicCode, string playerToken, PlayerPosition position,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryResolvePlayer(playerToken, out var identity) ||
+            !_games.TryGetValue(Normalize(publicCode), out var session) || identity.GameId != session.Id) return null;
+        await session.Gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!session.Players.TryGetValue(position, out var player) || player.AvatarStorageName is null) return null;
+            return new AvatarAccess(player.AvatarStorageName, player.AvatarContentType!);
+        }
+        finally { session.Gate.Release(); }
+    }
+
+    public async Task<IReadOnlyList<RecipientSnapshot>> ClearExpiredAvatarAsync(Guid gameId, Guid playerId,
+        string storageName, CancellationToken cancellationToken = default)
+    {
+        if (!TryGetGame(gameId, out var session)) return [];
+        await session.Gate.WaitAsync(cancellationToken);
+        try
+        {
+            var player = session.Players.Values.FirstOrDefault(item => item.Id == playerId);
+            if (player?.AvatarStorageName == storageName)
+            {
+                player.AvatarStorageName = null;
+                player.AvatarContentType = null;
+            }
+            return Snapshots(session);
+        }
+        finally { session.Gate.Release(); }
+    }
+
     private bool TryGetGame(Guid id, out Session session)
     {
         session = _games.Values.FirstOrDefault(item => item.Id == id)!;
@@ -137,15 +194,28 @@ public sealed class GameSessionManager(
 
     private static RecipientSnapshot[] Snapshots(Session session)
     {
-        var roomStatus = session.Game.Status is not GameStatus.InProgress ? RoomStatus.Finished :
-            session.Players.Count == 2 ? RoomStatus.Playing : RoomStatus.WaitingForPlayer;
+        var roomStatus = RoomState(session);
         var p1Connected = session.Players[PlayerPosition.Player1].Connections.Count > 0;
         var p2Connected = session.Players.TryGetValue(PlayerPosition.Player2, out var p2) && p2.Connections.Count > 0;
         return session.Players.Values.Select(player => new RecipientSnapshot(GroupName(session.Id, player.Position),
             new GameSnapshot(session.PublicCode, roomStatus, session.Game.Board.Cells.ToArray(),
                 session.Game.CurrentPlayer, session.Game.Winner, session.Game.Status, player.Position,
-                p1Connected, p2Connected))).ToArray();
+                p1Connected, p2Connected,
+                session.Players[PlayerPosition.Player1].AvatarStorageName is not null,
+                p2?.AvatarStorageName is not null,
+                AvatarUrl(session, PlayerPosition.Player1), AvatarUrl(session, PlayerPosition.Player2)))).ToArray();
     }
+
+    private static RoomStatus RoomState(Session session) =>
+        session.Game.Status is not GameStatus.InProgress ? RoomStatus.Finished :
+        session.Players.Count < 2 ? RoomStatus.WaitingForPlayer :
+        session.Players.Values.All(player => player.AvatarStorageName is not null) ? RoomStatus.Playing :
+        RoomStatus.WaitingForAvatars;
+
+    private static string? AvatarUrl(Session session, PlayerPosition position) =>
+        session.Players.TryGetValue(position, out var player) && player.AvatarStorageName is not null
+            ? $"/api/games/{session.PublicCode}/players/{(int)position}/avatar?v={player.AvatarStorageName[..8]}"
+            : null;
 
     public static string GroupName(Guid gameId, PlayerPosition position) => $"Game:{gameId:N}:{position}";
     private static string Normalize(string code) => code.Trim().ToUpperInvariant();
@@ -190,6 +260,8 @@ public sealed class GameSessionManager(
         public string Token { get; } = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
             .TrimEnd('=').Replace('+', '-').Replace('/', '_');
         public HashSet<string> Connections { get; } = new(StringComparer.Ordinal);
+        public string? AvatarStorageName { get; set; }
+        public string? AvatarContentType { get; set; }
         public static Player Create(PlayerPosition position) => new(position);
     }
 }
