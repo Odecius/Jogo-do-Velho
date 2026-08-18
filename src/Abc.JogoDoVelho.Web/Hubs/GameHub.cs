@@ -33,6 +33,20 @@ public sealed class GameHub(IGameSessionManager sessions) : Hub
         await BroadcastAsync(result.Snapshots);
     }
 
+    public async Task RequestRematch()
+    {
+        var token = Context.GetHttpContext()?.Request.Cookies[PlayerSessionCookie.Name];
+        if (token is null) throw new HubException("SessionInvalid");
+        var result = await sessions.RequestRematchAsync(token, Context.ConnectionAborted);
+        if (result is null) throw new HubException("SessionInvalid");
+        if (!result.Accepted)
+        {
+            await Clients.Caller.SendAsync("RematchRejected", result.Error, Context.ConnectionAborted);
+            return;
+        }
+        await BroadcastAsync(result.Snapshots);
+    }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var snapshots = await sessions.DisconnectAsync(Context.ConnectionId);

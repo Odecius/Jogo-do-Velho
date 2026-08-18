@@ -17,4 +17,5 @@ public interface IGameSessionManager
         CancellationToken cancellationToken = default);
     Task<IReadOnlyList<RecipientSnapshot>> ClearExpiredAvatarAsync(Guid gameId, Guid playerId, string storageName,
         CancellationToken cancellationToken = default);
+    Task<RematchGameResult?> RequestRematchAsync(string playerToken, CancellationToken cancellationToken = default);
 }

@@ -123,12 +123,37 @@ public sealed class GameSessionManager(
             var result = session.Game.PlaceMove(identity.Position, cellIndex);
             if (result == MoveResult.Success && session.Game.Status is not GameStatus.InProgress)
             {
+                if (session.Game.Winner is PlayerPosition winner) session.Scores[winner]++;
+                else session.Draws++;
                 await metadataStore.CompleteGameAsync(session.Id, session.Game.Status.ToString(),
                     session.Game.Winner is null ? null : (int)session.Game.Winner.Value,
                     timeProvider.GetUtcNow(), cancellationToken);
                 GameSessionLog.GameCompleted(logger, session.Id, session.Game.Status);
             }
             return new MoveGameResult(Map(result), Snapshots(session));
+        }
+        finally { session.Gate.Release(); }
+    }
+
+    public async Task<RematchGameResult?> RequestRematchAsync(string playerToken,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryResolvePlayer(playerToken, out var identity) || !TryGetGame(identity.GameId, out var session)) return null;
+        await session.Gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (session.Game.Status is GameStatus.InProgress)
+                return new RematchGameResult(false, "GameNotFinished", Snapshots(session));
+
+            session.RematchRequests.Add(identity.Position);
+            if (session.RematchRequests.Count == 2)
+            {
+                session.Game = new Game();
+                session.RematchRequests.Clear();
+                session.RoundNumber++;
+                GameSessionLog.RematchStarted(logger, session.Id, session.RoundNumber);
+            }
+            return new RematchGameResult(true, null, Snapshots(session));
         }
         finally { session.Gate.Release(); }
     }
@@ -203,7 +228,10 @@ public sealed class GameSessionManager(
                 p1Connected, p2Connected,
                 session.Players[PlayerPosition.Player1].AvatarStorageName is not null,
                 p2?.AvatarStorageName is not null,
-                AvatarUrl(session, PlayerPosition.Player1), AvatarUrl(session, PlayerPosition.Player2)))).ToArray();
+                AvatarUrl(session, PlayerPosition.Player1), AvatarUrl(session, PlayerPosition.Player2),
+                session.Scores[PlayerPosition.Player1], session.Scores[PlayerPosition.Player2], session.Draws,
+                session.RematchRequests.Contains(player.Position),
+                session.RematchRequests.Contains(Opponent(player.Position)), session.RoundNumber))).ToArray();
     }
 
     private static RoomStatus RoomState(Session session) =>
@@ -216,6 +244,9 @@ public sealed class GameSessionManager(
         session.Players.TryGetValue(position, out var player) && player.AvatarStorageName is not null
             ? $"/api/games/{session.PublicCode}/players/{(int)position}/avatar?v={player.AvatarStorageName[..8]}"
             : null;
+
+    private static PlayerPosition Opponent(PlayerPosition position) => position is PlayerPosition.Player1
+        ? PlayerPosition.Player2 : PlayerPosition.Player1;
 
     public static string GroupName(Guid gameId, PlayerPosition position) => $"Game:{gameId:N}:{position}";
     private static string Normalize(string code) => code.Trim().ToUpperInvariant();
@@ -246,8 +277,16 @@ public sealed class GameSessionManager(
         public Guid Id { get; } = Guid.NewGuid();
         public string PublicCode { get; }
         public DateTimeOffset CreatedAtUtc { get; }
-        public Game Game { get; } = new();
+        public Game Game { get; set; } = new();
         public Dictionary<PlayerPosition, Player> Players { get; } = [];
+        public Dictionary<PlayerPosition, int> Scores { get; } = new()
+        {
+            [PlayerPosition.Player1] = 0,
+            [PlayerPosition.Player2] = 0
+        };
+        public int Draws { get; set; }
+        public int RoundNumber { get; set; } = 1;
+        public HashSet<PlayerPosition> RematchRequests { get; } = [];
         public SemaphoreSlim Gate { get; } = new(1, 1);
         public static Session Create(string code, DateTimeOffset created) => new(code, created);
     }
@@ -282,4 +321,7 @@ internal static partial class GameSessionLog
 
     [LoggerMessage(LogLevel.Information, "Game {GameId} completed with status {Status}")]
     public static partial void GameCompleted(ILogger logger, Guid gameId, GameStatus status);
+
+    [LoggerMessage(LogLevel.Information, "Rematch round {RoundNumber} started for game {GameId}")]
+    public static partial void RematchStarted(ILogger logger, Guid gameId, int roundNumber);
 }
