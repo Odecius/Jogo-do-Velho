@@ -13,6 +13,20 @@
 - Códigos públicos não concedem autorização e endpoints de criação/entrada possuem rate limiting.
 - SignalR resolve a posição exclusivamente pela sessão server-side.
 
+## Upload de avatar
+
+- Somente JPEG, PNG e WebP, até 5 MiB e 4096 × 4096.
+- MIME declarado, magic bytes, formato decodificado e dimensões precisam concordar.
+- ImageSharp decodifica, faz crop 512 × 512, remove perfis de metadados e reencoda em WebP.
+- O storage configurável fica fora de `wwwroot`; nomes são GUIDs e caminhos são canonicalizados.
+- Path traversal e reparse points são rejeitados antes de leitura ou exclusão.
+- Upload exige sessão pertencente à partida, antiforgery e limite de 10 tentativas por IP a cada 15 minutos.
+- Leitura exige sessão da mesma partida; código público isolado não autoriza.
+- Respostas usam MIME controlado, `Content-Disposition: inline`, `nosniff` e cache privado `no-store`.
+- Substituição é permitida somente antes de `Playing`; o arquivo anterior é removido.
+- Cleanup idempotente roda a cada 15 minutos e remove registros com 24 horas, continuando após falhas individuais.
+- A câmera só é solicitada após clique e requer HTTPS em produção (localhost é contexto seguro no desenvolvimento).
+
 ## Relato de vulnerabilidades
 
 Não publique credenciais ou dados pessoais em issues. Comunique o responsável pelo repositório por canal privado.

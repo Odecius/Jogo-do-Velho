@@ -24,3 +24,6 @@ dotnet run --project src/Abc.JogoDoVelho.Web
 ```
 
 Nenhuma credencial real deve ser adicionada à documentação ou ao Git.
+## Avatares
+
+O padrão local é `storage/avatars`. Em Docker, `AvatarStorage__RootPath=/app/storage/avatars` usa o volume separado `avatar-data`. Não copie esse volume para backups de longo prazo. A câmera funciona em `localhost`; fora dele, o navegador exige HTTPS.

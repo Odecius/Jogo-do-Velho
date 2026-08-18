@@ -4,7 +4,7 @@ MVP experimental de um jogo da velha multiplayer no qual duas pessoas usarão se
 
 ## Estado atual
 
-Fase D — primeiro multiplayer funcional concluído localmente. Selfies e upload ainda não estão implementados.
+Fase E — avatares temporários com upload seguro, câmera, limpeza automática e tabuleiro com selfies concluídos localmente.
 
 ## Stack planejada
 
@@ -40,14 +40,13 @@ dotnet format --verify-no-changes
 
 ## Privacidade
 
-Selfies serão dados pessoais temporários, sem reconhecimento ou análise facial. A política técnica está em `PRIVACY.md`. O upload ainda não está implementado.
+Selfies são avatares pessoais temporários, sem reconhecimento ou análise facial. JPEG, PNG e WebP de até 5 MiB e 4096 × 4096 são normalizados para WebP 512 × 512 sem metadados. Consulte `PRIVACY.md`.
 
 ## Limitações atuais
 
 - partidas e sessões ativas são perdidas quando a aplicação reinicia;
-- o frontend usa marcadores temporários `P1` e `P2`;
-- nenhum upload de imagem;
-- `DbContext` configurado, mas ainda sem entidades ou migrations;
+- avatares dependem do filesystem local e não suportam múltiplas instâncias;
+- partidas, sessões e associação dos avatares ativos são perdidas ao reiniciar;
 - nenhum deploy realizado.
 
 ## Roadmap

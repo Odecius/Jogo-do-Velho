@@ -59,3 +59,11 @@ Reconnect reutiliza a sessão e reassocia uma nova conexão. Disconnect apenas a
 PostgreSQL guarda somente metadados de `GameEntity` e `PlayerEntity`; jogadas e tokens não são persistidos. A migration inicial é `InitialGameMetadata`.
 
 Criação e entrada usam antiforgery por cookie/header. O frontend obtém um request token em `/api/antiforgery`. SignalR não usa antiforgery porque sua autorização depende do cookie `SameSite` e da validação server-side da sessão no Hub. Rate limiting fixo protege criação e entrada.
+
+## 2026-08-18 — Avatares temporários normalizados
+
+Usar ImageSharp 3.1.12, compatível com .NET 8 e sem dependência de `System.Drawing.Common`. A licença aplicável e sua condição de elegibilidade estão em `THIRD_PARTY_NOTICES.md`.
+
+O servidor aceita JPEG, PNG e WebP de até 5 MiB e 4096 × 4096, exige concordância entre MIME, magic bytes e decoder, aplica orientação e crop central, remove EXIF/XMP/IPTC/ICC e guarda somente WebP 512 × 512. Arquivos recebem GUID e ficam em `storage/avatars`, fora de `wwwroot`.
+
+A partida fica `WaitingForAvatars` até dois jogadores e dois avatares estarem presentes. Substituição é permitida antes de `Playing` e bloqueada depois. `Domain.GameStatus` não foi alterado. A retenção é de 24 horas, com cleanup a cada 15 minutos. O volume temporário não deve ser incluído em backups permanentes.

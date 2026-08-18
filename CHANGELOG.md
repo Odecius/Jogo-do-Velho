@@ -19,3 +19,13 @@ Todas as mudanças relevantes serão registradas neste arquivo.
 - Endpoints protegidos por antiforgery e rate limiting.
 - Persistência mínima de metadados com migration `InitialGameMetadata`.
 - Frontend responsivo para criação, compartilhamento e partida com `P1`/`P2`.
+# Changelog
+
+## 2026-08-18 — Fase E
+
+- upload autenticado de JPEG, PNG e WebP com validação real e antiforgery;
+- normalização WebP 512 × 512 sem metadados;
+- storage privado temporário, retenção de 24 horas e cleanup automático;
+- câmera, fallback por arquivo, consentimento e avatares no tabuleiro;
+- estado multiplayer `WaitingForAvatars` e atualização SignalR;
+- migration `AddPlayerAvatarMetadata` e volume Docker dedicado.

@@ -12,3 +12,4 @@ dotnet format --verify-no-changes
 ```
 
 `/health` verifica o processo web. `/ready` inclui a disponibilidade do PostgreSQL.
+Os testes de avatar geram imagens artificiais em memória. Nenhuma selfie ou fixture de pessoa real é usada ou versionada. A suíte cobre formatos, assinaturas, decoder, dimensões, storage, autorização, antiforgery, rate limit e snapshot SignalR.

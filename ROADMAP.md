@@ -6,9 +6,9 @@
 - [Concluído] Regras do jogo no servidor.
 - [Concluído] Criação e entrada em partida.
 - [Concluído] Comunicação em tempo real com SignalR.
-- Selfie ou imagem como avatar temporário.
+- [Concluído] Selfie ou imagem como avatar temporário.
 - Vitória, empate e rematch.
-- Limpeza automática das imagens.
+- [Concluído] Limpeza automática das imagens.
 
 ## Futuro
 
@@ -18,3 +18,4 @@
 - Modo espectador e PWA.
 - Variações de tabuleiro.
 - Deployment público, sujeito a revisão específica.
+- Suporte a HEIC, condicionado a decoder seguro, licença e revisão de compatibilidade.
