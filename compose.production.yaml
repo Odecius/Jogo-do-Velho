@@ -11,6 +11,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://0.0.0.0:8080
+      AllowedHosts: ${PUBLIC_HOSTNAME:?Set PUBLIC_HOSTNAME in the production env file}
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=jogo_do_velho;Username=jogo_do_velho;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the production env file}
       AvatarStorage__RootPath: /app/storage/avatars
       ReverseProxy__KnownNetwork: ${TRUSTED_PROXY_NETWORK:?Set TRUSTED_PROXY_NETWORK in the production env file}
