@@ -1,0 +1,46 @@
+name: jogo-do-velho
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ${JOGO_ENV_FILE:-/srv/stacks/apps/jogo-do-velho/jogo-do-velho.env}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=jogo_do_velho;Username=jogo_do_velho;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the production env file}
+      AvatarStorage__RootPath: /app/storage/avatars
+      ReverseProxy__KnownNetwork: ${TRUSTED_PROXY_NETWORK:?Set TRUSTED_PROXY_NETWORK in the production env file}
+    volumes:
+      - /srv/data/apps/jogo-do-velho/avatars:/app/storage/avatars
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - proxy
+      - databases
+
+networks:
+  proxy:
+    external: true
+  databases:
+    external: true

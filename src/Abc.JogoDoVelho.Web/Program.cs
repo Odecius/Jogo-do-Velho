@@ -6,13 +6,27 @@ using Abc.JogoDoVelho.Web.Avatars;
 using Abc.JogoDoVelho.Infrastructure.Avatars;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Net;
 using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = DatabaseConnectionString.Require(builder.Configuration.GetConnectionString("Postgres"));
+var knownProxyNetwork = builder.Configuration["ReverseProxy:KnownNetwork"];
+if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") &&
+    string.IsNullOrWhiteSpace(knownProxyNetwork))
+    throw new InvalidOperationException("ReverseProxy:KnownNetwork is required outside local and testing environments.");
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    if (!string.IsNullOrWhiteSpace(knownProxyNetwork))
+        options.KnownNetworks.Add(ParseNetwork(knownProxyNetwork));
+});
 
 builder.Services.AddPooledDbContextFactory<AppDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddSingleton<IGameMetadataStore, EfGameMetadataStore>();
@@ -70,6 +84,8 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     await using var scope = app.Services.CreateAsyncScope();
@@ -103,5 +119,15 @@ app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = item => item
 app.MapHealthChecks("/ready", new HealthCheckOptions { Predicate = item => item.Tags.Contains("ready") });
 
 app.Run();
+
+static Microsoft.AspNetCore.HttpOverrides.IPNetwork ParseNetwork(string cidr)
+{
+    var parts = cidr.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    if (parts.Length != 2 || !IPAddress.TryParse(parts[0], out var address) ||
+        !int.TryParse(parts[1], out var prefixLength) || prefixLength < 0 ||
+        prefixLength > (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? 32 : 128))
+        throw new InvalidOperationException("ReverseProxy:KnownNetwork must be a valid IPv4 or IPv6 CIDR.");
+    return new Microsoft.AspNetCore.HttpOverrides.IPNetwork(address, prefixLength);
+}
 
 public partial class Program;
