@@ -9,12 +9,13 @@
 - [Concluído] Selfie ou imagem como avatar temporário.
 - [Concluído] Vitória, empate e rematch.
 - [Concluído] Limpeza automática das imagens.
+- [Concluído] Deploy público controlado, HTTPS e smoke tests externos.
 
 ## Futuro
 
 - QR Code.
-- Observabilidade e preparação para publicação.
-- Publicação no GitHub.
+- Observabilidade ampliada e alertas operacionais.
+- Conclusão da revisão e merge no GitHub, somente após aprovação.
 - Validação em Chrome/Edge, dispositivos reais e webcam física.
 - Rate limiting distribuído para HTTP/SignalR no edge.
 - Escala horizontal com estado compartilhado, se necessária.
@@ -23,5 +24,4 @@
 - Nicknames e salas privadas.
 - Modo espectador e PWA.
 - Variações de tabuleiro.
-- Deployment público, sujeito a revisão específica.
 - Suporte a HEIC, condicionado a decoder seguro, licença e revisão de compatibilidade.

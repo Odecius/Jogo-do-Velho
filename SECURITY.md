@@ -33,7 +33,12 @@ Não publique credenciais ou dados pessoais em issues. Comunique o responsável 
 
 ## Produção
 
-Nenhum deploy foi realizado. Configurações de produção não fazem parte da foundation local.
+- deploy público ativo somente pelo proxy e túnel; a aplicação não expõe porta no host;
+- `AllowedHosts` aceita apenas o hostname público configurado;
+- apenas o proxy interno configurado é confiável para `X-Forwarded-For` e `X-Forwarded-Proto`;
+- segredos ficam em arquivo operacional protegido no servidor e não são versionados;
+- banco e role são dedicados, sem privilégios administrativos;
+- health checks, headers, antiforgery, cookies e isolamento do avatar foram verificados pela rota pública.
 
 ## UX multiplayer
 
@@ -48,5 +53,8 @@ Refresh, reconnect e rematch reutilizam exclusivamente o cookie opaco existente;
 - não existe rate limit por mensagem SignalR nem defesa distribuída: proxy/edge será necessário antes de produção;
 - uma única instância é suportada; reinício encerra partidas e limites em memória reiniciam;
 - o ambiente Development possui diagnóstico e nunca deve ser exposto publicamente.
+- chaves de Data Protection são efêmeras; reiniciar a aplicação invalida cookies antiforgery existentes;
+- TLS termina no edge e o salto interno do túnel ao proxy é HTTP em rede Docker privada;
+- teste final com dois dispositivos físicos e webcam real permanece pendente para a Fase J.
 
 Consulte `docs/threat-model.md` e `checklists/security-review.md`.

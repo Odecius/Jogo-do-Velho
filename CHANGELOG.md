@@ -20,6 +20,14 @@ Todas as mudanças relevantes serão registradas neste arquivo.
 - Persistência mínima de metadados com migration `InitialGameMetadata`.
 - Frontend responsivo para criação, compartilhamento e partida com `P1`/`P2`.
 
+## 2026-08-18 — Fase I
+
+- deploy de produção isolado em container não-root, sem porta publicada no host;
+- banco e usuário PostgreSQL dedicados, com migrations executadas explicitamente;
+- publicação por proxy reverso e Cloudflare Tunnel com HTTPS público;
+- smoke tests públicos de health, criação de partida, SignalR, cookies e avatar privado;
+- procedimento de rollback e riscos residuais documentados.
+
 ## 2026-08-18 — Fase G
 
 - threat model e checklists de segurança/release;

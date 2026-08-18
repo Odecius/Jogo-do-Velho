@@ -81,3 +81,11 @@ Convites usam `window.location.origin`, Clipboard API com fallback por seleção
 Salas expiram após 24 horas sem atividade observada pelo coordenador. Uma varredura a cada 15 minutos remove código público, tokens, connection IDs, avatares e referências, e marca o metadata da partida como `Expired`. O lifecycle é deliberadamente local e compatível somente com uma instância.
 
 Adicionar constraint PostgreSQL para `Player.Position IN (1, 2)`. O container Web permanece não-root e passa a usar filesystem read-only, `/tmp` limitado, `no-new-privileges`, nenhuma Linux capability, limite de processos e 512 MiB de memória. Esses limites são proteção básica, não declaração de capacidade.
+
+## 2026-08-18 — Deploy isolado de produção
+
+A aplicação usa uma stack Compose própria e somente redes compartilhadas explicitamente necessárias: proxy e banco. Não publica portas no host, não controla containers de terceiros e usa banco/role dedicados com privilégios mínimos.
+
+Migrations são uma operação explícita (`--migrate`) antes do início da aplicação; startup normal não altera schema. O proxy confiável é limitado à subnet interna configurada, com um único salto encaminhado, e o host público é validado exatamente.
+
+O TLS termina no edge do Cloudflare Tunnel. O trecho interno até o proxy usa HTTP na rede privada Docker, seguindo a topologia já adotada pelo servidor. Estado ativo continua em memória e a aplicação permanece em instância única.

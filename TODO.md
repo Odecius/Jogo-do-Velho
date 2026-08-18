@@ -38,3 +38,11 @@
 - [x] Adicionar rematch com consentimento dos dois jogadores.
 - [x] Adicionar placar volátil da sessão.
 - [x] Cobrir reconnect, refresh lógico e fluxo multiplayer completo.
+
+## Fase I — Produção controlada
+
+- [x] Criar stack de produção isolada e aplicar migrations explicitamente.
+- [x] Publicar pelo proxy reverso e Cloudflare Tunnel com HTTPS.
+- [x] Validar health, readiness, assets, SignalR, cookies e avatar pela rota pública.
+- [x] Documentar operação, rollback e riscos residuais.
+- [ ] Executar validação em dois dispositivos físicos e webcam real na Fase J.

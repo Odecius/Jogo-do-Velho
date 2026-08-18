@@ -4,7 +4,7 @@ MVP experimental de um jogo da velha multiplayer no qual duas pessoas usarão se
 
 ## Estado atual
 
-Fase G — fluxo completo revisado com hardening, isolamento entre partidas, lifecycle de salas e preparação local para publicação.
+Fase I — MVP publicado em produção com deploy isolado, proxy reverso, HTTPS no edge e validação pública controlada.
 
 ## Funcionalidades
 
@@ -78,12 +78,13 @@ Selfies são avatares pessoais temporários, sem reconhecimento ou análise faci
 - placar e rodadas de rematch existem somente em memória durante a sessão;
 - uma única instância da aplicação; sem escala horizontal ou limite distribuído de SignalR;
 - salas expiram após 24 horas de inatividade;
-- nenhum deploy realizado.
+- a sessão antiforgery não persiste entre reinícios; partidas ativas também são encerradas;
+- validação final em dois dispositivos físicos e webcam real permanece para a Fase J.
 
 ## Roadmap
 
 Consulte `ROADMAP.md`.
 
-**Production deployment: not performed**
+**Production deployment: active at https://jogo.abc-solutuions.com**
 
 Developed by Abc Solutions | Built with quality and care
