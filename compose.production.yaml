@@ -3,7 +3,7 @@ name: jogo-do-velho
 services:
   app:
     build:
-      context: .
+      context: ${JOGO_APP_DIR:-.}
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:

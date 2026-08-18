@@ -86,12 +86,13 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || args.Contains("--migrate", StringComparer.Ordinal))
 {
     await using var scope = app.Services.CreateAsyncScope();
     await using var database = await scope.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>()
         .CreateDbContextAsync();
     await database.Database.MigrateAsync();
+    if (!app.Environment.IsDevelopment()) return;
 }
 
 if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
