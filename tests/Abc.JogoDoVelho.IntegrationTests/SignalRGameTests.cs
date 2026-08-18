@@ -66,6 +66,57 @@ public sealed class SignalRGameTests : IClassFixture<FoundationWebApplicationFac
         Assert.Contains("SessionInvalid", exception.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task CompleteFlowReachesVictoryAndStartsConsentedRematch()
+    {
+        var first = await CreatePlayerOneAsync();
+        var second = await JoinPlayerTwoAsync(first.Created.PublicCode);
+        await UploadAvatarAsync(first.Created.PublicCode, first.Cookies);
+        await UploadAvatarAsync(first.Created.PublicCode, second);
+        await using var firstHub = CreateHub(first.Cookies); await using var secondHub = CreateHub(second);
+        var states = Channel.CreateUnbounded<GameSnapshot>();
+        firstHub.On<GameSnapshot>("GameStateChanged", state => states.Writer.TryWrite(state));
+        await firstHub.StartAsync(); await secondHub.StartAsync();
+        await firstHub.InvokeAsync("JoinGame", first.Created.PublicCode);
+        await secondHub.InvokeAsync("JoinGame", first.Created.PublicCode);
+        await ReadUntilAsync(states, state => state.RoomStatus == RoomStatus.Playing && state.Player2Connected);
+        await firstHub.InvokeAsync("PlaceMove", 0); await secondHub.InvokeAsync("PlaceMove", 3);
+        await firstHub.InvokeAsync("PlaceMove", 1); await secondHub.InvokeAsync("PlaceMove", 4);
+        await firstHub.InvokeAsync("PlaceMove", 2);
+        var finished = await ReadUntilAsync(states, state => state.GameStatus == GameStatus.Won);
+        await firstHub.InvokeAsync("RequestRematch");
+        var waiting = await ReadUntilAsync(states, state => state.YouRequestedRematch);
+        await secondHub.InvokeAsync("RequestRematch");
+        var rematch = await ReadUntilAsync(states, state => state.RoundNumber == 2);
+
+        Assert.Equal(PlayerPosition.Player1, finished.Winner);
+        Assert.Equal(1, finished.Player1Score);
+        Assert.True(waiting.OpponentRequestedRematch is false);
+        Assert.All(rematch.Board, Assert.Null);
+        Assert.Equal(PlayerPosition.Player1, rematch.CurrentPlayer);
+        Assert.True(rematch.Player1HasAvatar && rematch.Player2HasAvatar);
+        Assert.Equal(1, rematch.Player1Score);
+    }
+
+    [Fact]
+    public async Task ReconnectWithSameSessionRestoresSnapshotAndDoesNotOpenThirdSeat()
+    {
+        var first = await CreatePlayerOneAsync(); var second = await JoinPlayerTwoAsync(first.Created.PublicCode);
+        await using (var original = CreateHub(first.Cookies))
+        {
+            await original.StartAsync(); await original.InvokeAsync("JoinGame", first.Created.PublicCode);
+        }
+        await using var refreshed = CreateHub(first.Cookies); var states = Channel.CreateUnbounded<GameSnapshot>();
+        refreshed.On<GameSnapshot>("GameStateChanged", state => states.Writer.TryWrite(state));
+        await refreshed.StartAsync(); await refreshed.InvokeAsync("JoinGame", first.Created.PublicCode);
+        var restored = await ReadUntilAsync(states, state => state.YouAre == PlayerPosition.Player1);
+        using var third = _factory.CreateClient(); using var rejected = await GameHttpTests.SecurePostAsync(third, $"/api/games/{first.Created.PublicCode}/join");
+
+        Assert.Equal(PlayerPosition.Player1, restored.YouAre);
+        Assert.Equal(HttpStatusCode.Conflict, rejected.StatusCode);
+        Assert.NotEmpty(second.GetCookieHeader(new Uri("http://localhost")));
+    }
+
     private async Task<(GameHttpTests.CreatedGameResponse Created, CookieContainer Cookies)> CreatePlayerOneAsync()
     {
         using var client = _factory.CreateClient();

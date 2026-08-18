@@ -35,7 +35,8 @@ public sealed class GameHttpTests : IClassFixture<FoundationWebApplicationFactor
         using var page = await client.GetAsync("/game/ABCDEFGH");
         using var join = await SecurePostAsync(client, "/api/games/ABCDEFGH/join");
 
-        Assert.Equal(HttpStatusCode.NotFound, page.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+        Assert.Contains("Partida indisponível", await page.Content.ReadAsStringAsync(), StringComparison.Ordinal);
         Assert.Equal(HttpStatusCode.NotFound, join.StatusCode);
     }
 

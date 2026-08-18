@@ -135,6 +135,63 @@ public sealed class GameSessionManagerTests
         Assert.All(reconnected!, item => Assert.True(item.Snapshot.Player2Connected));
     }
 
+    [Fact]
+    public async Task RematchRequiresFinishedGameAndConsentFromBothPlayers()
+    {
+        var (manager, first, second) = await ReadyGameAsync();
+
+        var early = await manager.RequestRematchAsync(first.PlayerToken);
+        await PlayPlayerOneWinAsync(manager, first.PlayerToken, second.PlayerToken!);
+        var requested = await manager.RequestRematchAsync(first.PlayerToken);
+        var duplicate = await manager.RequestRematchAsync(first.PlayerToken);
+
+        Assert.False(early!.Accepted);
+        Assert.All(requested!.Snapshots, item => Assert.Equal(RoomStatus.Finished, item.Snapshot.RoomStatus));
+        Assert.All(requested.Snapshots, item => Assert.Equal(1, item.Snapshot.Player1Score));
+        Assert.Single(duplicate!.Snapshots, item => item.Snapshot.YouAre == PlayerPosition.Player1 && item.Snapshot.YouRequestedRematch);
+
+        var restarted = await manager.RequestRematchAsync(second.PlayerToken!);
+
+        Assert.All(restarted!.Snapshots, item => Assert.Equal(RoomStatus.Playing, item.Snapshot.RoomStatus));
+        Assert.All(restarted.Snapshots, item => Assert.All(item.Snapshot.Board, Assert.Null));
+        Assert.All(restarted.Snapshots, item => Assert.Equal(PlayerPosition.Player1, item.Snapshot.CurrentPlayer));
+        Assert.All(restarted.Snapshots, item => Assert.True(item.Snapshot.Player1HasAvatar && item.Snapshot.Player2HasAvatar));
+        Assert.All(restarted.Snapshots, item => Assert.False(item.Snapshot.YouRequestedRematch || item.Snapshot.OpponentRequestedRematch));
+        Assert.All(restarted.Snapshots, item => Assert.Equal(2, item.Snapshot.RoundNumber));
+    }
+
+    [Fact]
+    public async Task SessionScoreCountsPlayerTwoWinAndDraw()
+    {
+        var (manager, first, second) = await ReadyGameAsync();
+        await manager.PlaceMoveAsync(first.PlayerToken, 0); await manager.PlaceMoveAsync(second.PlayerToken!, 3);
+        await manager.PlaceMoveAsync(first.PlayerToken, 1); await manager.PlaceMoveAsync(second.PlayerToken!, 4);
+        await manager.PlaceMoveAsync(first.PlayerToken, 8); var won = await manager.PlaceMoveAsync(second.PlayerToken!, 5);
+        Assert.All(won!.Snapshots, item => Assert.Equal(1, item.Snapshot.Player2Score));
+        await manager.RequestRematchAsync(first.PlayerToken); await manager.RequestRematchAsync(second.PlayerToken!);
+        var moves = new[] { (first.PlayerToken, 0), (second.PlayerToken!, 1), (first.PlayerToken, 2),
+            (second.PlayerToken!, 4), (first.PlayerToken, 3), (second.PlayerToken!, 5),
+            (first.PlayerToken, 7), (second.PlayerToken!, 6), (first.PlayerToken, 8) };
+        MoveGameResult? drawn = null;
+        foreach (var (token, cell) in moves) drawn = await manager.PlaceMoveAsync(token, cell);
+        Assert.All(drawn!.Snapshots, item => Assert.Equal(1, item.Snapshot.Draws));
+        Assert.All(drawn.Snapshots, item => Assert.Equal(GameStatus.Draw, item.Snapshot.GameStatus));
+    }
+
+    private static async Task<(GameSessionManager Manager, CreatedGame First, JoinGameResult Second)> ReadyGameAsync()
+    {
+        var manager = CreateManager(); var first = await manager.CreateGameAsync();
+        var second = await manager.JoinGameAsync(first.PublicCode, null); await AddBothAvatars(manager, first, second);
+        return (manager, first, second);
+    }
+
+    private static async Task PlayPlayerOneWinAsync(GameSessionManager manager, string first, string second)
+    {
+        await manager.PlaceMoveAsync(first, 0); await manager.PlaceMoveAsync(second, 3);
+        await manager.PlaceMoveAsync(first, 1); await manager.PlaceMoveAsync(second, 4);
+        await manager.PlaceMoveAsync(first, 2);
+    }
+
     private static async Task AddBothAvatars(GameSessionManager manager, CreatedGame first, JoinGameResult second)
     {
         await manager.SetAvatarAsync(first.PublicCode, first.PlayerToken, "one.webp", "image/webp");
