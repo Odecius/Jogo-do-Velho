@@ -50,6 +50,17 @@ public sealed class AvatarSecurityTests
             Processor().ProcessAsync(new MemoryStream(png[..12]), "image/png", 12));
     }
 
+    [Theory]
+    [InlineData("RIFFxxxxWEBPnot-a-webp", "image/webp")]
+    [InlineData("\u0089PNG\r\n\u001a\ninvalid", "image/png")]
+    [InlineData("\u00ff\u00d8\u00ffgarbage", "image/jpeg")]
+    public async Task PlausibleSignatureWithInvalidPayloadIsRejected(string value, string contentType)
+    {
+        var bytes = System.Text.Encoding.Latin1.GetBytes(value);
+        await Assert.ThrowsAsync<AvatarValidationException>(() =>
+            Processor().ProcessAsync(new MemoryStream(bytes), contentType, bytes.Length));
+    }
+
     [Fact]
     public async Task SizeAndDimensionsAreLimited()
     {
@@ -74,6 +85,21 @@ public sealed class AvatarSecurityTests
         await storage.DeleteAsync(name);
         await storage.DeleteAsync(name);
         Assert.False(File.Exists(Path.Combine(root, name)));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("../outside.webp")]
+    [InlineData("folder/avatar.webp")]
+    [InlineData("folder\\avatar.webp")]
+    [InlineData("C:\\outside.webp")]
+    [InlineData("avatar.png")]
+    public async Task StorageRejectsUntrustedNames(string name)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "abc-avatar-test", Guid.NewGuid().ToString("N"));
+        var storage = new FileSystemAvatarStorage(Options.Create(new AvatarOptions { RootPath = root }));
+        await Assert.ThrowsAsync<UnsafeAvatarPathException>(() => storage.OpenReadAsync(name));
+        await Assert.ThrowsAsync<UnsafeAvatarPathException>(() => storage.DeleteAsync(name));
     }
 
     private static AvatarImageProcessor Processor() => new(Options.Create(new AvatarOptions()));

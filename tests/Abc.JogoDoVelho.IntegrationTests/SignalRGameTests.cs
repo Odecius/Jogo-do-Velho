@@ -117,6 +117,33 @@ public sealed class SignalRGameTests : IClassFixture<FoundationWebApplicationFac
         Assert.NotEmpty(second.GetCookieHeader(new Uri("http://localhost")));
     }
 
+    [Fact]
+    public async Task GamesAreIsolatedFromCrossGameAndAnonymousClients()
+    {
+        var gameA = await CreatePlayerOneAsync(); var a2 = await JoinPlayerTwoAsync(gameA.Created.PublicCode);
+        var gameB = await CreatePlayerOneAsync(); var b2 = await JoinPlayerTwoAsync(gameB.Created.PublicCode);
+        await UploadAvatarAsync(gameB.Created.PublicCode, gameB.Cookies);
+        await UploadAvatarAsync(gameB.Created.PublicCode, b2);
+        await using var attacker = CreateHub(gameA.Cookies); await attacker.StartAsync();
+        var crossJoin = await Assert.ThrowsAsync<HubException>(() => attacker.InvokeAsync("JoinGame", gameB.Created.PublicCode));
+        using var attackerHttp = _factory.CreateClient();
+        attackerHttp.DefaultRequestHeaders.Add("Cookie", gameA.Cookies.GetCookieHeader(new Uri("http://localhost")));
+        using var crossAvatar = await attackerHttp.GetAsync($"/api/games/{gameB.Created.PublicCode}/players/1/avatar");
+        await using var b1Hub = CreateHub(gameB.Cookies); var states = Channel.CreateUnbounded<GameSnapshot>();
+        b1Hub.On<GameSnapshot>("GameStateChanged", state => states.Writer.TryWrite(state));
+        await b1Hub.StartAsync(); await b1Hub.InvokeAsync("JoinGame", gameB.Created.PublicCode);
+        var untouched = await ReadUntilAsync(states, state => state.YouAre == PlayerPosition.Player1);
+        await using var anonymous = CreateHub(new CookieContainer()); await anonymous.StartAsync();
+        await Assert.ThrowsAsync<HubException>(() => anonymous.InvokeAsync("PlaceMove", 0));
+        await Assert.ThrowsAsync<HubException>(() => anonymous.InvokeAsync("RequestRematch"));
+
+        Assert.Contains("GameAccessDenied", crossJoin.Message, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.NotFound, crossAvatar.StatusCode);
+        Assert.All(untouched.Board, Assert.Null);
+        Assert.Equal(0, untouched.Player1Score + untouched.Player2Score + untouched.Draws);
+        Assert.NotEmpty(a2.GetCookieHeader(new Uri("http://localhost")));
+    }
+
     private async Task<(GameHttpTests.CreatedGameResponse Created, CookieContainer Cookies)> CreatePlayerOneAsync()
     {
         using var client = _factory.CreateClient();

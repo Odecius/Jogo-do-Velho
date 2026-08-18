@@ -192,15 +192,59 @@ public sealed class GameSessionManagerTests
         await manager.PlaceMoveAsync(first, 2);
     }
 
+    [Fact]
+    public async Task InactiveGameExpirationRemovesRoomAndSessionToken()
+    {
+        var clock = new MutableTimeProvider(new DateTimeOffset(2026, 8, 18, 0, 0, 0, TimeSpan.Zero));
+        var manager = CreateManager(clock); var game = await manager.CreateGameAsync();
+        clock.Advance(TimeSpan.FromHours(25));
+
+        var removed = await manager.ExpireInactiveGamesAsync(clock.GetUtcNow().AddHours(-24));
+
+        Assert.Equal(1, removed);
+        Assert.False(manager.GameExists(game.PublicCode));
+        Assert.False(manager.TryResolvePlayer(game.PlayerToken, out _));
+        Assert.Equal(0, await manager.ExpireInactiveGamesAsync(clock.GetUtcNow()));
+    }
+
+    [Fact]
+    public async Task ManipulatedMovesAndPrematureRematchDoNotCorruptGame()
+    {
+        var (manager, first, second) = await ReadyGameAsync();
+        foreach (var index in new[] { -1, 9, 999999 })
+            Assert.Equal(MoveOutcome.InvalidCell, (await manager.PlaceMoveAsync(first.PlayerToken, index))!.Outcome);
+        var attempts = await Task.WhenAll(Enumerable.Range(0, 20)
+            .Select(index => manager.PlaceMoveAsync(first.PlayerToken, index % 9)));
+        Assert.Single(attempts, item => item!.Outcome == MoveOutcome.Success);
+        Assert.False((await manager.RequestRematchAsync(second.PlayerToken!))!.Accepted);
+        var board = attempts.Last()!.Snapshots[0].Snapshot.Board;
+        Assert.Single(board, cell => cell == PlayerPosition.Player1);
+    }
+
     private static async Task AddBothAvatars(GameSessionManager manager, CreatedGame first, JoinGameResult second)
     {
         await manager.SetAvatarAsync(first.PublicCode, first.PlayerToken, "one.webp", "image/webp");
         await manager.SetAvatarAsync(first.PublicCode, second.PlayerToken!, "two.webp", "image/webp");
     }
 
-    private static GameSessionManager CreateManager() => new(
-        new FakeMetadataStore(), new FakeAvatarMetadataStore(), TimeProvider.System, Options.Create(new AvatarOptions()),
+    private static GameSessionManager CreateManager(TimeProvider? timeProvider = null) => new(
+        new FakeMetadataStore(), new FakeAvatarMetadataStore(), new FakeAvatarStorage(), timeProvider ?? TimeProvider.System, Options.Create(new AvatarOptions()),
         NullLogger<GameSessionManager>.Instance);
+
+    private sealed class MutableTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
+        public void Advance(TimeSpan value) => utcNow = utcNow.Add(value);
+    }
+
+    private sealed class FakeAvatarStorage : IAvatarStorage
+    {
+        public Task<string> SaveAsync(ReadOnlyMemory<byte> content, CancellationToken cancellationToken = default) =>
+            Task.FromResult("unused.webp");
+        public Task<Stream?> OpenReadAsync(string storageName, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Stream?>(null);
+        public Task DeleteAsync(string storageName, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
 
     private sealed class FakeAvatarMetadataStore : IAvatarMetadataStore
     {
@@ -221,5 +265,7 @@ public sealed class GameSessionManagerTests
             DateTimeOffset joinedAtUtc, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task CompleteGameAsync(Guid gameId, string status, int? winnerPosition,
             DateTimeOffset finishedAtUtc, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task ExpireGameAsync(Guid gameId, DateTimeOffset expiredAtUtc,
+            CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

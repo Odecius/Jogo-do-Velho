@@ -51,6 +51,17 @@ public sealed class GameHttpTests : IClassFixture<FoundationWebApplicationFactor
     }
 
     [Fact]
+    public async Task IncorrectAntiforgeryTokenIsRejectedEvenWithCookie()
+    {
+        using var client = _factory.CreateClient();
+        using var tokenCookie = await client.GetAsync("/api/antiforgery");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/games");
+        request.Headers.Add("X-CSRF-TOKEN", "invalid-token");
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task CreateGameIsRateLimited()
     {
         await using var factory = new FoundationWebApplicationFactory();

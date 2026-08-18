@@ -32,7 +32,14 @@ public sealed class WebFoundationTests : IClassFixture<FoundationWebApplicationF
         response.EnsureSuccessStatusCode();
         Assert.Contains("Criar partida", content, StringComparison.Ordinal);
         Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
-        Assert.True(response.Headers.Contains("Content-Security-Policy"));
+        Assert.Equal("no-referrer", response.Headers.GetValues("Referrer-Policy").Single());
+        var csp = response.Headers.GetValues("Content-Security-Policy").Single();
+        Assert.Contains("frame-ancestors 'none'", csp, StringComparison.Ordinal);
+        Assert.DoesNotContain("unsafe-inline", csp, StringComparison.Ordinal);
+        Assert.DoesNotContain("unsafe-eval", csp, StringComparison.Ordinal);
+        Assert.DoesNotContain(" *", csp, StringComparison.Ordinal);
+        Assert.Equal("camera=(self), microphone=(), geolocation=()",
+            response.Headers.GetValues("Permissions-Policy").Single());
     }
 }
 
@@ -78,5 +85,7 @@ internal sealed class NoOpGameMetadataStore : IGameMetadataStore
         DateTimeOffset joinedAtUtc, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task CompleteGameAsync(Guid gameId, string status, int? winnerPosition,
         DateTimeOffset finishedAtUtc, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ExpireGameAsync(Guid gameId, DateTimeOffset expiredAtUtc,
+        CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
