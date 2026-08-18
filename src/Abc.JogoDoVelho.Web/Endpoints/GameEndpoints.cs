@@ -115,7 +115,7 @@ public static partial class GameEndpoints
         endpoints.MapGet("/game/{publicCode}", (string publicCode, IGameSessionManager sessions,
             IWebHostEnvironment environment) =>
         {
-            if (!PublicCodePattern().IsMatch(publicCode) || !sessions.GameExists(publicCode)) return Results.NotFound();
+            if (!PublicCodePattern().IsMatch(publicCode)) return Results.NotFound();
             return Results.File(Path.Combine(environment.WebRootPath, "index.html"), "text/html");
         }).RequireRateLimiting("join-game");
 

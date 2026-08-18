@@ -3,48 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Foundation local do projeto Jogo do Velho da ABC Solutions.">
+  <meta name="description" content="Jogue Jogo do Velho online usando sua própria selfie.">
   <title>Jogo do Velho — ABC Solutions</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="card">
-    <p class="eyebrow">ABC Solutions</p>
-    <h1>Jogo do Velho</h1>
-    <section id="home-view">
-      <p>Crie uma partida e convide outra pessoa para jogar em tempo real.</p>
-      <button id="create-game" class="primary" type="button">Criar partida</button>
-    </section>
+    <p class="eyebrow">ABC Solutions</p><h1>Jogo do Velho</h1>
+    <section id="home-view"><p class="lead">Jogue online usando sua própria selfie.</p><p>Crie uma partida, envie o convite e use sua foto no lugar do X ou O.</p><button id="create-game" class="primary" type="button">Criar partida</button></section>
+    <section id="route-error" class="result-panel" hidden><h2 id="route-error-title">Partida indisponível</h2><p id="route-error-detail"></p><a class="button-link primary" href="/">Criar nova partida</a></section>
     <section id="game-view" hidden>
-      <p class="label">Código da partida</p>
-      <strong id="public-code" class="code"></strong>
-      <div class="share-row">
-        <input id="join-link" readonly aria-label="Link para entrar na partida">
-        <button id="copy-link" type="button">Copiar link</button>
-      </div>
-      <p id="game-message" class="message" aria-live="polite">Conectando…</p>
-      <section id="avatar-panel" class="avatar-panel">
-        <h2>Sua foto</h2>
-        <p>Sua foto será usada apenas como avatar desta partida e apagada automaticamente em até 24 horas.</p>
-        <img id="avatar-preview" class="avatar-preview" alt="Prévia do seu avatar" hidden>
-        <video id="camera-preview" class="camera-preview" autoplay playsinline hidden></video>
-        <canvas id="capture-canvas" hidden></canvas>
-        <div class="avatar-actions">
-          <button id="start-camera" type="button">Tirar selfie</button>
-          <label class="file-button" for="photo-file">Escolher foto</label>
-          <input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-          <button id="capture-photo" type="button" hidden>Capturar</button>
-          <button id="cancel-camera" type="button" hidden>Cancelar</button>
-          <button id="upload-avatar" class="primary" type="button" hidden>Usar esta foto</button>
-        </div>
+      <section class="room-summary" aria-label="Jogadores da partida">
+        <div class="player-card"><span>Você</span><img id="you-avatar" class="player-avatar" alt="Seu avatar" hidden><span id="you-placeholder">Sem foto</span></div><div class="versus" aria-hidden="true">×</div><div class="player-card"><span>Adversário</span><img id="opponent-avatar" class="player-avatar" alt="Avatar do adversário" hidden><span id="opponent-placeholder">Aguardando…</span></div>
       </section>
+      <div class="invite-panel"><span class="label">Código</span><strong id="public-code" class="code"></strong><input id="join-link" readonly aria-label="Link para entrar na partida"><div class="share-row"><button id="copy-link" type="button">Copiar convite</button><button id="share-link" type="button" hidden>Compartilhar</button></div></div>
+      <p id="game-message" class="message" aria-live="polite">Conectando…</p><p id="connection-message" class="connection-message" aria-live="polite"></p>
+      <section id="avatar-panel" class="avatar-panel"><h2>Sua foto</h2><p>Sua foto será usada apenas como avatar desta partida e apagada automaticamente em até 24 horas.</p><img id="avatar-preview" class="avatar-preview" alt="Prévia do seu avatar" hidden><video id="camera-preview" class="camera-preview" autoplay playsinline hidden></video><canvas id="capture-canvas" hidden></canvas><div class="avatar-actions"><button id="start-camera" type="button">Tirar selfie</button><label class="file-button" for="photo-file">Escolher foto</label><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" hidden><button id="capture-photo" type="button" hidden>Capturar</button><button id="cancel-camera" type="button" hidden>Cancelar</button><button id="upload-avatar" class="primary" type="button" hidden>Usar esta foto</button></div></section>
       <div id="board" class="board" aria-label="Tabuleiro do jogo da velha"></div>
-      <div class="players"><span id="player1-status">P1 offline</span><span id="player2-status">P2 offline</span></div>
+      <div class="players"><span id="player1-status">Jogador 1 offline</span><span id="player2-status">Jogador 2 offline</span></div>
+      <section class="scoreboard" aria-label="Placar desta sessão"><span>Você <strong id="you-score">0</strong></span><span>Empates <strong id="draw-score">0</strong></span><span>Adversário <strong id="opponent-score">0</strong></span></section>
+      <section id="result-panel" class="result-panel" hidden><h2 id="result-title"></h2><p id="rematch-message"></p><button id="rematch" class="primary" type="button">Jogar novamente</button></section>
     </section>
     <p id="error-message" class="error" role="alert"></p>
-  </main>
-  <footer>Developed by Abc Solutions | Built with quality and care</footer>
-  <script src="/signalr.min.js"></script>
-  <script src="/app.js"></script>
+  </main><footer>Developed by Abc Solutions | Built with quality and care</footer><script src="/signalr.min.js"></script><script src="/app.js"></script>
 </body>
 </html>
