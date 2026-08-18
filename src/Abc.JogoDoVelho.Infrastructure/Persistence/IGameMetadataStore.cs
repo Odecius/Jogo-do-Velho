@@ -22,5 +22,7 @@ public interface IGameMetadataStore
         int? winnerPosition,
         DateTimeOffset finishedAtUtc,
         CancellationToken cancellationToken = default);
+
+    Task ExpireGameAsync(Guid gameId, DateTimeOffset expiredAtUtc, CancellationToken cancellationToken = default);
 }
 

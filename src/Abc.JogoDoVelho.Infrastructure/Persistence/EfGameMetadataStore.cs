@@ -64,5 +64,16 @@ public sealed class EfGameMetadataStore(IDbContextFactory<AppDbContext> contextF
         game.FinishedAtUtc = finishedAtUtc;
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task ExpireGameAsync(Guid gameId, DateTimeOffset expiredAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var game = await context.Games.SingleOrDefaultAsync(item => item.Id == gameId, cancellationToken);
+        if (game is null) return;
+        game.Status = "Expired";
+        game.FinishedAtUtc ??= expiredAtUtc;
+        await context.SaveChangesAsync(cancellationToken);
+    }
 }
 

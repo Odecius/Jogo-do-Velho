@@ -28,6 +28,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable("players");
             entity.HasKey(player => player.Id);
             entity.HasIndex(player => new { player.GameId, player.Position }).IsUnique();
+            entity.ToTable(table => table.HasCheckConstraint("CK_players_position", "\"Position\" IN (1, 2)"));
             entity.Property(player => player.AvatarStorageName).HasMaxLength(64);
             entity.Property(player => player.AvatarContentType).HasMaxLength(32);
             entity.HasIndex(player => player.AvatarExpiresAtUtc);

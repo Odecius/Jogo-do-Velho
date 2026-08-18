@@ -57,7 +57,8 @@ public sealed class AvatarImageProcessor(IOptions<AvatarOptions> options) : IAva
             return new ProcessedAvatar(output.ToArray(), "image/webp");
         }
         catch (AvatarValidationException) { throw; }
-        catch (Exception exception) when (exception is InvalidImageContentException or UnknownImageFormatException or NotSupportedException)
+        catch (Exception exception) when (exception is InvalidImageContentException or ImageFormatException or
+            UnknownImageFormatException or NotSupportedException)
         {
             throw new AvatarValidationException("CorruptImage");
         }

@@ -16,7 +16,16 @@ var connectionString = DatabaseConnectionString.Require(builder.Configuration.Ge
 
 builder.Services.AddPooledDbContextFactory<AppDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddSingleton<IGameMetadataStore, EfGameMetadataStore>();
-builder.Services.Configure<AvatarOptions>(builder.Configuration.GetSection(AvatarOptions.SectionName));
+builder.Services.AddOptions<AvatarOptions>()
+    .Bind(builder.Configuration.GetSection(AvatarOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.RootPath), "Avatar storage root is required.")
+    .Validate(options => options.MaximumUploadBytes is > 0 and <= 5 * 1024 * 1024,
+        "Avatar upload limit must be between 1 byte and 5 MiB.")
+    .Validate(options => options.MaximumDimension is >= 512 and <= 4096,
+        "Avatar maximum dimension must be between 512 and 4096 pixels.")
+    .Validate(options => options.OutputSize is >= 64 and <= 512,
+        "Avatar output size must be between 64 and 512 pixels.")
+    .ValidateOnStart();
 builder.Services.PostConfigure<AvatarOptions>(options =>
 {
     if (!Path.IsPathRooted(options.RootPath)) options.RootPath = Path.Combine(builder.Environment.ContentRootPath, options.RootPath);
@@ -26,6 +35,14 @@ builder.Services.AddSingleton<IAvatarMetadataStore, EfAvatarMetadataStore>();
 builder.Services.AddSingleton<IAvatarImageProcessor, AvatarImageProcessor>();
 builder.Services.AddSingleton<IAvatarStorage, FileSystemAvatarStorage>();
 builder.Services.AddSingleton<IGameSessionManager, GameSessionManager>();
+builder.Services.AddOptions<GameSessionOptions>()
+    .Bind(builder.Configuration.GetSection(GameSessionOptions.SectionName))
+    .Validate(options => options.InactivityHours is >= 1 and <= 168,
+        "Game session inactivity must be between 1 and 168 hours.")
+    .Validate(options => options.CleanupMinutes is >= 1 and <= 60,
+        "Game session cleanup interval must be between 1 and 60 minutes.")
+    .ValidateOnStart();
+builder.Services.AddHostedService<GameSessionCleanupService>();
 builder.Services.AddSingleton<GameSnapshotBroadcaster>();
 builder.Services.AddHostedService<AvatarCleanupService>();
 builder.Services.AddSingleton(TimeProvider.System);

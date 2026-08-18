@@ -10,6 +10,7 @@ namespace Abc.JogoDoVelho.Web.Multiplayer;
 public sealed class GameSessionManager(
     IGameMetadataStore metadataStore,
     IAvatarMetadataStore avatarMetadataStore,
+    IAvatarStorage avatarStorage,
     TimeProvider timeProvider,
     IOptions<AvatarOptions> avatarOptions,
     ILogger<GameSessionManager> logger) : IGameSessionManager
@@ -51,6 +52,7 @@ public sealed class GameSessionManager(
         await session.Gate.WaitAsync(cancellationToken);
         try
         {
+            Touch(session);
             if (existingToken is not null && _players.TryGetValue(existingToken, out var identity) &&
                 identity.GameId == session.Id)
                 return new JoinGameResult(JoinOutcome.Success, existingToken);
@@ -87,6 +89,7 @@ public sealed class GameSessionManager(
         await session.Gate.WaitAsync(cancellationToken);
         try
         {
+            Touch(session);
             session.Players[identity.Position].Connections.Add(connectionId);
             _connections[connectionId] = identity;
             GameSessionLog.ConnectionEstablished(logger, session.Id);
@@ -103,6 +106,7 @@ public sealed class GameSessionManager(
         await session.Gate.WaitAsync(cancellationToken);
         try
         {
+            Touch(session);
             session.Players[identity.Position].Connections.Remove(connectionId);
             GameSessionLog.ConnectionDisconnected(logger, session.Id);
             return Snapshots(session);
@@ -117,6 +121,7 @@ public sealed class GameSessionManager(
         await session.Gate.WaitAsync(cancellationToken);
         try
         {
+            Touch(session);
             if (RoomState(session) is not RoomStatus.Playing)
                 return new MoveGameResult(MoveOutcome.RoomNotReady, Snapshots(session));
 
@@ -142,6 +147,7 @@ public sealed class GameSessionManager(
         await session.Gate.WaitAsync(cancellationToken);
         try
         {
+            Touch(session);
             if (session.Game.Status is GameStatus.InProgress)
                 return new RematchGameResult(false, "GameNotFinished", Snapshots(session));
 
@@ -166,6 +172,7 @@ public sealed class GameSessionManager(
         await session.Gate.WaitAsync(cancellationToken);
         try
         {
+            Touch(session);
             if (RoomState(session) is RoomStatus.Playing or RoomStatus.Finished)
                 return new AvatarUpdateResult(false, "GameAlreadyStarted", null, Snapshots(session));
             var now = timeProvider.GetUtcNow();
@@ -211,6 +218,39 @@ public sealed class GameSessionManager(
         finally { session.Gate.Release(); }
     }
 
+    public async Task<int> ExpireInactiveGamesAsync(DateTimeOffset cutoff,
+        CancellationToken cancellationToken = default)
+    {
+        var removed = 0;
+        foreach (var candidate in _games.Values.ToArray())
+        {
+            await candidate.Gate.WaitAsync(cancellationToken);
+            try
+            {
+                if (candidate.LastActivityAtUtc > cutoff || !_games.TryRemove(candidate.PublicCode, out _)) continue;
+                foreach (var player in candidate.Players.Values)
+                {
+                    _players.TryRemove(player.Token, out _);
+                    foreach (var connection in player.Connections) _connections.TryRemove(connection, out _);
+                    if (player.AvatarStorageName is null) continue;
+                    try
+                    {
+                        await avatarStorage.DeleteAsync(player.AvatarStorageName, cancellationToken);
+                        await avatarMetadataStore.ClearAsync(player.Id, player.AvatarStorageName, cancellationToken);
+                    }
+                    catch (Exception exception)
+                    {
+                        GameSessionLog.ExpirationItemFailed(logger, candidate.Id, player.Id, exception);
+                    }
+                }
+                await metadataStore.ExpireGameAsync(candidate.Id, timeProvider.GetUtcNow(), cancellationToken);
+                removed++;
+            }
+            finally { candidate.Gate.Release(); }
+        }
+        return removed;
+    }
+
     private bool TryGetGame(Guid id, out Session session)
     {
         session = _games.Values.FirstOrDefault(item => item.Id == id)!;
@@ -248,6 +288,8 @@ public sealed class GameSessionManager(
     private static PlayerPosition Opponent(PlayerPosition position) => position is PlayerPosition.Player1
         ? PlayerPosition.Player2 : PlayerPosition.Player1;
 
+    private void Touch(Session session) => session.LastActivityAtUtc = timeProvider.GetUtcNow();
+
     public static string GroupName(Guid gameId, PlayerPosition position) => $"Game:{gameId:N}:{position}";
     private static string Normalize(string code) => code.Trim().ToUpperInvariant();
     private static MoveOutcome Map(MoveResult result) => result switch
@@ -271,12 +313,13 @@ public sealed class GameSessionManager(
     {
         private Session(string code, DateTimeOffset created)
         {
-            PublicCode = code; CreatedAtUtc = created;
+            PublicCode = code; CreatedAtUtc = created; LastActivityAtUtc = created;
             Players[PlayerPosition.Player1] = Player.Create(PlayerPosition.Player1);
         }
         public Guid Id { get; } = Guid.NewGuid();
         public string PublicCode { get; }
         public DateTimeOffset CreatedAtUtc { get; }
+        public DateTimeOffset LastActivityAtUtc { get; set; }
         public Game Game { get; set; } = new();
         public Dictionary<PlayerPosition, Player> Players { get; } = [];
         public Dictionary<PlayerPosition, int> Scores { get; } = new()
@@ -324,4 +367,7 @@ internal static partial class GameSessionLog
 
     [LoggerMessage(LogLevel.Information, "Rematch round {RoundNumber} started for game {GameId}")]
     public static partial void RematchStarted(ILogger logger, Guid gameId, int roundNumber);
+
+    [LoggerMessage(LogLevel.Warning, "Game {GameId} expiration cleanup failed for player {PlayerId}")]
+    public static partial void ExpirationItemFailed(ILogger logger, Guid gameId, Guid playerId, Exception exception);
 }
