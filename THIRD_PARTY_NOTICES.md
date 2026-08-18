@@ -9,8 +9,6 @@
 - Projeto: https://github.com/dotnet/aspnetcore
 
 O cliente é mantido localmente para que o jogo não dependa de uma CDN durante a execução.
-# Third-party notices
-
 ## SixLabors.ImageSharp 3.1.12
 
 Finalidade: decodificar JPEG/PNG/WebP, validar dimensões, aplicar orientação, crop/resize, remover metadados e codificar o avatar final em WebP.

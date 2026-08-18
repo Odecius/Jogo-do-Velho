@@ -15,6 +15,9 @@
 - QR Code.
 - Observabilidade e preparação para publicação.
 - Publicação no GitHub.
+- Validação em Chrome/Edge, dispositivos reais e webcam física.
+- Rate limiting distribuído para HTTP/SignalR no edge.
+- Escala horizontal com estado compartilhado, se necessária.
 - Histórico persistente de partidas e placar.
 - Placar persistente e histórico.
 - Nicknames e salas privadas.

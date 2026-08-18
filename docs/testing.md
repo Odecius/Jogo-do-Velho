@@ -13,3 +13,5 @@ dotnet format --verify-no-changes
 
 `/health` verifica o processo web. `/ready` inclui a disponibilidade do PostgreSQL.
 Os testes de avatar geram imagens artificiais em memória. Nenhuma selfie ou fixture de pessoa real é usada ou versionada. A suíte cobre formatos, assinaturas, decoder, dimensões, storage, autorização, antiforgery, rate limit e snapshot SignalR.
+
+O hardening acrescenta Game A/Game B, atacante anônimo, cookie cross-game, índices manipulados, stress concorrente leve, rematch prematuro, expiração de sala, antiforgery incorreto, CSP restrita e payloads com assinaturas enganosas. Browser E2E dedicado permanece futuro; a jornada crítica usa `WebApplicationFactory` e clientes SignalR reais do processo de teste.

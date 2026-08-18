@@ -20,6 +20,14 @@ Todas as mudanças relevantes serão registradas neste arquivo.
 - Persistência mínima de metadados com migration `InitialGameMetadata`.
 - Frontend responsivo para criação, compartilhamento e partida com `P1`/`P2`.
 
+## 2026-08-18 — Fase G
+
+- threat model e checklists de segurança/release;
+- isolamento obrigatório entre duas partidas e cenários de cliente malicioso;
+- expiração de salas e sessões após 24 horas de inatividade;
+- validação de configuração crítica e constraint de posição do jogador;
+- hardening do container Web e regressões adicionais de upload, CSP e antiforgery.
+
 ## 2026-08-18 — Fase F
 
 - home, lobby e convite final com Clipboard e Web Share opcional;

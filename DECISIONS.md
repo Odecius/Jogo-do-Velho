@@ -75,3 +75,9 @@ Cada jogador solicita rematch pelo mesmo método SignalR. Uma solicitação isol
 Vitórias e empates são contabilizados somente na sala em memória. Não há tabela de rodada, histórico persistente ou alteração no Domain. Reiniciar a aplicação zera o placar e encerra a sala.
 
 Convites usam `window.location.origin`, Clipboard API com fallback por seleção e Web Share API quando disponível. QR Code permanece no roadmap para evitar dependência e escopo adicionais.
+
+## 2026-08-18 — Expiração de salas e hardening local
+
+Salas expiram após 24 horas sem atividade observada pelo coordenador. Uma varredura a cada 15 minutos remove código público, tokens, connection IDs, avatares e referências, e marca o metadata da partida como `Expired`. O lifecycle é deliberadamente local e compatível somente com uma instância.
+
+Adicionar constraint PostgreSQL para `Player.Position IN (1, 2)`. O container Web permanece não-root e passa a usar filesystem read-only, `/tmp` limitado, `no-new-privileges`, nenhuma Linux capability, limite de processos e 512 MiB de memória. Esses limites são proteção básica, não declaração de capacidade.

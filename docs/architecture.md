@@ -22,3 +22,7 @@ PostgreSQL persiste somente metadados de jogos e jogadores. Partidas ativas e se
 ## Rodadas e rematch
 
 `GameSessionManager` mantém placar, número da rodada e consentimentos de rematch dentro da sala. Quando ambos consentem, substitui a referência por `new Domain.Game()`, preservando jogadores, sessões e avatares. Snapshots personalizados continuam sendo a única fonte de verdade do frontend. Refresh/reconnect reutiliza o cookie da sessão, troca a connection ID e recupera o snapshot atual.
+
+## Lifecycle e limites
+
+Atividade relevante atualiza `LastActivityAtUtc`. Salas inativas por 24 horas são removidas por `GameSessionCleanupService` a cada 15 minutos, incluindo tokens, connections e avatars. O processo continua sendo a única fonte do estado ativo; múltiplas instâncias não são suportadas. Consulte `threat-model.md`.

@@ -38,3 +38,15 @@ Nenhum deploy foi realizado. Configurações de produção não fazem parte da f
 ## UX multiplayer
 
 Refresh, reconnect e rematch reutilizam exclusivamente o cookie opaco existente; nenhum token é enviado em URL, DOM ou snapshot. O servidor continua validando turno, estado da rodada e identidade, independentemente dos bloqueios visuais do tabuleiro. Um terceiro jogador continua sem acesso mesmo após disconnect ou refresh.
+
+## Hardening e riscos residuais
+
+- salas/tokens expiram após 24 horas de inatividade e são varridos a cada 15 minutos;
+- CSP não permite inline/eval/wildcard e impede framing; câmera fica restrita à própria origem;
+- o container Web é não-root, read-only, sem capabilities e com recursos moderadamente limitados;
+- PostgreSQL mantém código público único, jogador único por posição e constraint de posição 1/2;
+- não existe rate limit por mensagem SignalR nem defesa distribuída: proxy/edge será necessário antes de produção;
+- uma única instância é suportada; reinício encerra partidas e limites em memória reiniciam;
+- o ambiente Development possui diagnóstico e nunca deve ser exposto publicamente.
+
+Consulte `docs/threat-model.md` e `checklists/security-review.md`.
