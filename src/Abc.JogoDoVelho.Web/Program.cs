@@ -2,6 +2,9 @@ using Abc.JogoDoVelho.Infrastructure.Persistence;
 using Abc.JogoDoVelho.Web.Endpoints;
 using Abc.JogoDoVelho.Web.Hubs;
 using Abc.JogoDoVelho.Web.Multiplayer;
+using Abc.JogoDoVelho.Web.Avatars;
+using Abc.JogoDoVelho.Infrastructure.Avatars;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -13,7 +16,18 @@ var connectionString = DatabaseConnectionString.Require(builder.Configuration.Ge
 
 builder.Services.AddPooledDbContextFactory<AppDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddSingleton<IGameMetadataStore, EfGameMetadataStore>();
+builder.Services.Configure<AvatarOptions>(builder.Configuration.GetSection(AvatarOptions.SectionName));
+builder.Services.PostConfigure<AvatarOptions>(options =>
+{
+    if (!Path.IsPathRooted(options.RootPath)) options.RootPath = Path.Combine(builder.Environment.ContentRootPath, options.RootPath);
+});
+builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = 6 * 1024 * 1024);
+builder.Services.AddSingleton<IAvatarMetadataStore, EfAvatarMetadataStore>();
+builder.Services.AddSingleton<IAvatarImageProcessor, AvatarImageProcessor>();
+builder.Services.AddSingleton<IAvatarStorage, FileSystemAvatarStorage>();
 builder.Services.AddSingleton<IGameSessionManager, GameSessionManager>();
+builder.Services.AddSingleton<GameSnapshotBroadcaster>();
+builder.Services.AddHostedService<AvatarCleanupService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSignalR(options => options.EnableDetailedErrors = builder.Environment.IsDevelopment())
     .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -29,6 +43,9 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("join-game", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "local",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    options.AddPolicy("upload-avatar", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "local",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(15), QueueLimit = 0 }));
 });
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])

@@ -10,6 +10,14 @@ public sealed class PlayerEntity
 
     public DateTimeOffset JoinedAtUtc { get; set; }
 
+    public string? AvatarStorageName { get; set; }
+
+    public string? AvatarContentType { get; set; }
+
+    public DateTimeOffset? AvatarUploadedAtUtc { get; set; }
+
+    public DateTimeOffset? AvatarExpiresAtUtc { get; set; }
+
     public GameEntity Game { get; set; } = null!;
 }
 

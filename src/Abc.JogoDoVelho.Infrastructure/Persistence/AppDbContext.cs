@@ -28,6 +28,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable("players");
             entity.HasKey(player => player.Id);
             entity.HasIndex(player => new { player.GameId, player.Position }).IsUnique();
+            entity.Property(player => player.AvatarStorageName).HasMaxLength(64);
+            entity.Property(player => player.AvatarContentType).HasMaxLength(32);
+            entity.HasIndex(player => player.AvatarExpiresAtUtc);
         });
     }
 }

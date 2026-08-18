@@ -39,8 +39,7 @@ public sealed class EfGameMetadataStore(IDbContextFactory<AppDbContext> contextF
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var game = await context.Games.SingleAsync(item => item.Id == gameId, cancellationToken);
-        game.StartedAtUtc = joinedAtUtc;
-        game.Status = "Playing";
+        game.Status = "WaitingForAvatars";
         context.Players.Add(new PlayerEntity
         {
             Id = playerId,
