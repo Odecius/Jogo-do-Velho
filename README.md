@@ -1,93 +1,96 @@
-# Jogo do Velho — ABC Solutions
+# Jogo do Velho — Real-Time Selfie Tic-Tac-Toe
 
-MVP experimental de um jogo da velha multiplayer no qual duas pessoas usarão selfies como símbolos do tabuleiro.
+A secure two-player tic-tac-toe application built with .NET 8, SignalR and PostgreSQL.
 
-## Estado atual
+## Project Overview
 
-Fase J concluída — MVP publicado e validado em produção com dois jogadores reais em redes/localizações diferentes.
+Jogo do Velho turns a familiar game into a real-time multiplayer experience. One player creates a room and shares an invitation link; both players add temporary avatars, play through synchronized turns and can request a rematch while preserving the session score.
 
-## Funcionalidades
+## Features
 
-- criação e entrada por convite;
-- multiplayer server-authoritative com SignalR;
-- avatar temporário por câmera ou arquivo;
-- vitória, empate, placar da sessão e rematch consentido;
-- reconnect/refresh com sessão temporária;
-- expiração automática de avatars e salas inativas.
+- Real-time multiplayer with ASP.NET Core SignalR
+- Invitation by shareable room link
+- Server-authoritative game rules and player identity
+- Temporary selfie/avatar upload
+- Live board, score and connection-state synchronization
+- Reconnect using the same protected player session
+- Mutual-consent rematch flow
+- Room expiration and avatar cleanup
+- Health and readiness endpoints
+- Docker deployment with PostgreSQL
 
-## Stack técnica
+## Architecture
 
-- .NET 8 e ASP.NET Core 8;
-- SignalR para atualização multiplayer em tempo real;
-- HTML, CSS e JavaScript vanilla;
-- PostgreSQL, Entity Framework Core e Npgsql;
-- xUnit para testes;
-- Docker Compose para desenvolvimento local.
+The solution separates domain rules, infrastructure and the ASP.NET Core web application:
 
-## Arquitetura
+- **Domain:** board, moves, wins, draws and game state
+- **Web:** HTTP endpoints, SignalR hub, sessions and multiplayer coordination
+- **Infrastructure:** PostgreSQL metadata and private filesystem avatar storage
+- **Tests:** unit and integration coverage, including real SignalR clients
 
-A solution será dividida em `Domain`, `Infrastructure` e `Web`, com projetos separados para testes unitários e de integração. Consulte `docs/architecture.md` e `DECISIONS.md`.
+Game commands never trust a client-supplied player position or game identifier. The server resolves identity from an opaque session and coordinates concurrent actions per room.
 
-## Requisitos
+See [Architecture](docs/architecture.md) and [Threat Model](docs/threat-model.md).
 
-- .NET SDK 8 para build/testes locais;
-- Docker Desktop/Engine com Compose para a stack completa;
-- browser moderno; HTTPS será obrigatório fora de localhost para câmera e cookie Secure.
+## Avatar Privacy
 
-## Execução local
+Avatars are temporary personal data, not identity documents. The application does not perform facial recognition or biometric analysis.
 
-Copie `.env.example` para `.env`, substitua a senha de exemplo e execute:
+- Accepted files are decoded and normalized to WebP.
+- Dimensions, signatures and upload rates are validated.
+- Files remain outside the public web root.
+- Access requires an authorized game session.
+- Responses disable caching.
+- Replacement, expiration and cleanup remove obsolete files and metadata.
+- Tests use generated images rather than real selfies.
 
-```powershell
-docker compose up --build -d
-```
+See [PRIVACY.md](PRIVACY.md).
 
-A aplicação estará em `http://127.0.0.1:8080`. Consulte `docs/setup.md`.
+## Security
 
-## Configuração
+- Secure, HTTP-only, SameSite session cookies
+- Antiforgery validation for HTTP mutations
+- Rate limiting for room creation, joining and avatar upload
+- Server-side authorization for moves, rematches and avatar access
+- Cross-room and manipulated-session tests
+- Content Security Policy and defensive HTTP headers
+- Non-root container runtime
+- PostgreSQL not directly published by the application stack
+- Secrets supplied outside source control
 
-`.env.example` contém somente placeholders. Defina `POSTGRES_PASSWORD` localmente; a connection string é montada por variáveis no Compose. `AvatarStorage` limita upload/dimensões e `GameSessions` define TTL/cleanup. Configuração crítica inválida interrompe o startup sem imprimir credenciais.
+Residual limitations are documented rather than hidden, including in-memory room state, single-instance operation and non-distributed rate limiting.
 
-## Docker
+See [SECURITY.md](SECURITY.md) and [docs/threat-model.md](docs/threat-model.md).
 
-A imagem usa build multi-stage e runtime ASP.NET 8 como usuário não-root. O serviço possui filesystem read-only, `/tmp` limitado, capabilities removidas e volume gravável exclusivo para avatars. PostgreSQL não publica porta no host.
+## Testing
 
-## Testes
+The automated suites cover domain rules, concurrency, HTTP endpoints, antiforgery, rate limiting, image validation, storage authorization and full SignalR flows with two independent clients. PostgreSQL readiness and migrations are validated with a disposable database environment.
 
-```powershell
-dotnet restore
+```bash
 dotnet build
 dotnet test
 dotnet format --verify-no-changes
 ```
 
-Testes usam imagens artificiais e dois clientes SignalR independentes. Consulte `docs/testing.md` e os checklists de release/segurança.
+Browser E2E automation remains future work; the critical journey is exercised through `WebApplicationFactory` and real SignalR test clients.
 
-## Segurança
+## Deployment
 
-Códigos públicos localizam salas, mas não autorizam ações. Sessões opacas, antiforgery, rate limiting, locks por sala, upload normalizado, storage privado, CSP e expiração limitam as ameaças conhecidas. Consulte `SECURITY.md` e `docs/threat-model.md`.
+The application has been deployed and validated in a controlled Linux/Docker environment. Production validation covered two players on separate networks, invitation, avatars, synchronized gameplay, score, refresh/session continuity and cleanup.
 
-## Privacidade
+Operational addresses, paths, commands and credentials are intentionally excluded from this public overview. See [docs/deployment.md](docs/deployment.md) for the sanitized deployment status and known limitations.
 
-Selfies são avatares pessoais temporários, sem reconhecimento ou análise facial. JPEG, PNG e WebP de até 5 MiB e 4096 × 4096 são normalizados para WebP 512 × 512 sem metadados. Consulte `PRIVACY.md`.
+## Current Status
 
-## Limitações atuais
+- Multiplayer, avatars, PostgreSQL metadata, security hardening and automated tests are implemented.
+- Controlled production deployment and the two-player journey were validated.
+- The implementation currently remains in Draft PR #1 pending final integration into `main`.
+- Horizontal scaling, persistent game history and browser E2E tests are not implemented.
 
-- partidas e sessões ativas são perdidas quando a aplicação reinicia;
-- avatares dependem do filesystem local e não suportam múltiplas instâncias;
-- placar e rodadas de rematch existem somente em memória durante a sessão;
-- uma única instância da aplicação; sem escala horizontal ou limite distribuído de SignalR;
-- salas expiram após 24 horas de inatividade;
-- a sessão antiforgery não persiste entre reinícios; partidas ativas também são encerradas;
+## Key Lessons Learned
 
-## Validação final
-
-Convite público, fotos reais dos dois participantes, partida e placar sincronizados foram confirmados em produção. Refresh preservou identidade, posição e snapshot da sessão; o cleanup removeu arquivo e metadata de um avatar artificial expirado. Nenhum nome, foto ou dado pessoal foi versionado.
-
-## Roadmap
-
-Consulte `ROADMAP.md`.
-
-**Production deployment: active at https://jogo.abc-solutuions.com**
-
-Developed by Abc Solutions | Built with quality and care
+- Real-time clients must not be trusted as the authority for identity or game state.
+- Personal images require validation, access control, retention and cleanup as one lifecycle.
+- Reconnect and rematch behavior need explicit concurrency rules.
+- Monitoring, rollback and production validation are part of completing a feature.
+- Known single-instance limitations should be stated before attempting scale-out.
