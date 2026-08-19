@@ -1,96 +1,63 @@
 # Jogo do Velho — Real-Time Selfie Tic-Tac-Toe
 
-A secure two-player tic-tac-toe application built with .NET 8, SignalR and PostgreSQL.
+This repository is preparing a secure two-player tic-tac-toe application built with .NET 8, SignalR and PostgreSQL.
 
-## Project Overview
+## Repository Status
 
-Jogo do Velho turns a familiar game into a real-time multiplayer experience. One player creates a room and shares an invitation link; both players add temporary avatars, play through synchronized turns and can request a rematch while preserving the session score.
+The `main` branch currently contains project documentation only. The application code, automated tests and deployment assets described below are implemented and validated in [Draft PR #1](https://github.com/Odecius/Jogo-do-Velho/pull/1), pending review and merge into `main`.
 
-## Features
+Cloning `main` does not currently provide a runnable application. To inspect the implementation before it is merged, review the Draft PR and its branch without treating it as a released baseline.
+
+## Scope Implemented in Draft PR #1
 
 - Real-time multiplayer with ASP.NET Core SignalR
 - Invitation by shareable room link
 - Server-authoritative game rules and player identity
-- Temporary selfie/avatar upload
+- Temporary selfie/avatar upload with validation and cleanup
 - Live board, score and connection-state synchronization
-- Reconnect using the same protected player session
-- Mutual-consent rematch flow
-- Room expiration and avatar cleanup
+- Reconnect and mutual-consent rematch flows
 - Health and readiness endpoints
-- Docker deployment with PostgreSQL
+- PostgreSQL metadata persistence
+- Docker deployment assets
+- Unit and integration tests, including real SignalR clients
+- Security hardening for sessions, HTTP mutations, uploads and containers
 
-## Architecture
+These capabilities are not yet part of `main`.
 
-The solution separates domain rules, infrastructure and the ASP.NET Core web application:
+## Proposed Architecture
+
+Draft PR #1 separates domain rules, infrastructure and the ASP.NET Core web application:
 
 - **Domain:** board, moves, wins, draws and game state
 - **Web:** HTTP endpoints, SignalR hub, sessions and multiplayer coordination
 - **Infrastructure:** PostgreSQL metadata and private filesystem avatar storage
-- **Tests:** unit and integration coverage, including real SignalR clients
+- **Tests:** domain, HTTP, security and real-time integration coverage
 
-Game commands never trust a client-supplied player position or game identifier. The server resolves identity from an opaque session and coordinates concurrent actions per room.
+The proposed design resolves player identity server-side and does not trust client-supplied player positions or game identifiers.
 
-See [Architecture](docs/architecture.md) and [Threat Model](docs/threat-model.md).
+See [Architecture](docs/architecture.md) and the [Threat Model proposed in Draft PR #1](https://github.com/Odecius/Jogo-do-Velho/blob/agent/jogo-do-velho-foundation/docs/threat-model.md). Some linked documents describe the pending PR implementation rather than code already present on `main`.
 
-## Avatar Privacy
+## Privacy and Security Design
 
-Avatars are temporary personal data, not identity documents. The application does not perform facial recognition or biometric analysis.
+Avatars are treated as temporary personal data, not identity documents. The pending implementation validates and normalizes uploads, stores files outside the public web root, authorizes access by game session, disables caching and removes obsolete data.
 
-- Accepted files are decoded and normalized to WebP.
-- Dimensions, signatures and upload rates are validated.
-- Files remain outside the public web root.
-- Access requires an authorized game session.
-- Responses disable caching.
-- Replacement, expiration and cleanup remove obsolete files and metadata.
-- Tests use generated images rather than real selfies.
+The security design also covers secure cookies, antiforgery validation, rate limiting, server-side authorization, defensive HTTP headers, a non-root container and externally supplied secrets.
 
-See [PRIVACY.md](PRIVACY.md).
+See [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md) and the [pending Threat Model](https://github.com/Odecius/Jogo-do-Velho/blob/agent/jogo-do-velho-foundation/docs/threat-model.md).
 
-## Security
+## Validation Status
 
-- Secure, HTTP-only, SameSite session cookies
-- Antiforgery validation for HTTP mutations
-- Rate limiting for room creation, joining and avatar upload
-- Server-side authorization for moves, rematches and avatar access
-- Cross-room and manipulated-session tests
-- Content Security Policy and defensive HTTP headers
-- Non-root container runtime
-- PostgreSQL not directly published by the application stack
-- Secrets supplied outside source control
+The Draft PR contains automated domain and integration suites and records a controlled Linux/Docker validation of the two-player journey. Those results support review of the PR; they are not evidence that `main` currently builds or runs the application.
 
-Residual limitations are documented rather than hidden, including in-memory room state, single-instance operation and non-distributed rate limiting.
+Before merging, the PR should be evaluated for build, tests, formatting, security checks, mergeability, divergence and unresolved review comments.
 
-See [SECURITY.md](SECURITY.md) and [docs/threat-model.md](docs/threat-model.md).
+## Known Limitations of the Pending Implementation
 
-## Testing
+- In-memory room state and single-instance operation
+- Non-distributed rate limiting
+- No persistent game history
+- No browser E2E automation
 
-The automated suites cover domain rules, concurrency, HTTP endpoints, antiforgery, rate limiting, image validation, storage authorization and full SignalR flows with two independent clients. PostgreSQL readiness and migrations are validated with a disposable database environment.
+## Merge Policy
 
-```bash
-dotnet build
-dotnet test
-dotnet format --verify-no-changes
-```
-
-Browser E2E automation remains future work; the critical journey is exercised through `WebApplicationFactory` and real SignalR test clients.
-
-## Deployment
-
-The application has been deployed and validated in a controlled Linux/Docker environment. Production validation covered two players on separate networks, invitation, avatars, synchronized gameplay, score, refresh/session continuity and cleanup.
-
-Operational addresses, paths, commands and credentials are intentionally excluded from this public overview. See [docs/deployment.md](docs/deployment.md) for the sanitized deployment status and known limitations.
-
-## Current Status
-
-- Multiplayer, avatars, PostgreSQL metadata, security hardening and automated tests are implemented.
-- Controlled production deployment and the two-player journey were validated.
-- The implementation currently remains in Draft PR #1 pending final integration into `main`.
-- Horizontal scaling, persistent game history and browser E2E tests are not implemented.
-
-## Key Lessons Learned
-
-- Real-time clients must not be trusted as the authority for identity or game state.
-- Personal images require validation, access control, retention and cleanup as one lifecycle.
-- Reconnect and rematch behavior need explicit concurrency rules.
-- Monitoring, rollback and production validation are part of completing a feature.
-- Known single-instance limitations should be stated before attempting scale-out.
+Draft PR #1 must not be merged automatically. After its checks and review are complete, merge requires an explicit decision. Until then, `main` remains the documentation baseline and the Draft PR remains the implementation candidate.
