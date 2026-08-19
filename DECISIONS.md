@@ -24,3 +24,68 @@ Usar `agent/jogo-do-velho-foundation` por instrução específica do projeto. Es
 
 As imagens ficarão fora de diretórios executáveis, com retenção planejada de 24 horas, validação real do conteúdo e remoção automática. A implementação ocorrerá em fase posterior.
 
+## 2026-08-16 — Engine pura do jogo
+
+O domínio usa `Game`, `Board`, `PlayerPosition`, `GameStatus` e `MoveResult`, sem dependências de infraestrutura. O tabuleiro possui nove células indexadas de 0 a 8. `Player1` sempre começa.
+
+Erros esperados de gameplay são retornados por `MoveResult`: `Success`, `InvalidCell`, `NotPlayersTurn`, `CellOccupied` e `GameFinished`. O domínio não contém mensagens de interface nem usa exceptions para esses fluxos.
+
+A engine começa diretamente em `InProgress`; `Waiting` pertence à coordenação multiplayer e não ao estado lógico de uma rodada. Os estados terminais são `Won` e `Draw`.
+
+O array interno do tabuleiro não é exposto. Consumidores recebem uma coleção somente leitura, e toda mutação passa por `Game.PlaceMove`. A engine é síncrona e não implementa locks; concorrência será tratada pela camada coordenadora futura.
+
+Uma nova rodada será representada por uma nova instância de `Game`, sem método `Reset`, reduzindo mutabilidade e evitando estado residual.
+
+## 2026-08-17 — Coordenação multiplayer em memória
+
+`GameSessionManager` mantém salas, engine ativa, sessões e conexões em memória. Cada sala possui seu próprio `SemaphoreSlim`, garantindo uma mutação por vez sem bloquear partidas diferentes. Reiniciar a aplicação encerra partidas e invalida sessões ativas; Redis não será usado no MVP.
+
+O estado da sala (`WaitingForPlayer`, `Playing`, `Finished`) representa presença e ciclo multiplayer, enquanto `Domain.GameStatus` representa somente as regras da rodada (`InProgress`, `Won`, `Draw`).
+
+## 2026-08-17 — Códigos e identidade temporária
+
+Códigos públicos usam oito caracteres de um alfabeto sem `0`, `O`, `1`, `I` e `L`, gerados com `RandomNumberGenerator` e comparados sem diferença entre maiúsculas e minúsculas. Eles permitem localizar uma sala, mas não autorizam jogadas.
+
+Cada jogador recebe token opaco de 256 bits em cookie `HttpOnly`, `SameSite=Lax`, `Secure` fora de Development/Testing e validade de oito horas. Tokens ficam somente em memória e não aparecem em URL, resposta JSON, DOM ou logs.
+
+## 2026-08-17 — SignalR e snapshots personalizados
+
+O Hub expõe somente `JoinGame(publicCode)` e `PlaceMove(cellIndex)`. O jogador é determinado pelo cookie; posição ou ID não são aceitos do cliente. Cada posição possui grupo interno baseado no `GameId`, permitindo snapshots com `YouAre` sem expor IDs internos. Os eventos são `GameStateChanged` e `MoveRejected`.
+
+Reconnect reutiliza a sessão e reassocia uma nova conexão. Disconnect apenas atualiza presença e não libera a vaga nem causa derrota.
+
+## 2026-08-17 — Persistência mínima e proteção HTTP
+
+PostgreSQL guarda somente metadados de `GameEntity` e `PlayerEntity`; jogadas e tokens não são persistidos. A migration inicial é `InitialGameMetadata`.
+
+Criação e entrada usam antiforgery por cookie/header. O frontend obtém um request token em `/api/antiforgery`. SignalR não usa antiforgery porque sua autorização depende do cookie `SameSite` e da validação server-side da sessão no Hub. Rate limiting fixo protege criação e entrada.
+
+## 2026-08-18 — Avatares temporários normalizados
+
+Usar ImageSharp 3.1.12, compatível com .NET 8 e sem dependência de `System.Drawing.Common`. A licença aplicável e sua condição de elegibilidade estão em `THIRD_PARTY_NOTICES.md`.
+
+O servidor aceita JPEG, PNG e WebP de até 5 MiB e 4096 × 4096, exige concordância entre MIME, magic bytes e decoder, aplica orientação e crop central, remove EXIF/XMP/IPTC/ICC e guarda somente WebP 512 × 512. Arquivos recebem GUID e ficam em `storage/avatars`, fora de `wwwroot`.
+
+A partida fica `WaitingForAvatars` até dois jogadores e dois avatares estarem presentes. Substituição é permitida antes de `Playing` e bloqueada depois. `Domain.GameStatus` não foi alterado. A retenção é de 24 horas, com cleanup a cada 15 minutos. O volume temporário não deve ser incluído em backups permanentes.
+
+## 2026-08-18 — Rematch e placar voláteis
+
+Cada jogador solicita rematch pelo mesmo método SignalR. Uma solicitação isolada apenas atualiza o snapshot; somente o consentimento dos dois cria uma nova instância de `Domain.Game`. Avatares e sessões são preservados, flags são limpas e Player1 começa novamente.
+
+Vitórias e empates são contabilizados somente na sala em memória. Não há tabela de rodada, histórico persistente ou alteração no Domain. Reiniciar a aplicação zera o placar e encerra a sala.
+
+Convites usam `window.location.origin`, Clipboard API com fallback por seleção e Web Share API quando disponível. QR Code permanece no roadmap para evitar dependência e escopo adicionais.
+
+## 2026-08-18 — Expiração de salas e hardening local
+
+Salas expiram após 24 horas sem atividade observada pelo coordenador. Uma varredura a cada 15 minutos remove código público, tokens, connection IDs, avatares e referências, e marca o metadata da partida como `Expired`. O lifecycle é deliberadamente local e compatível somente com uma instância.
+
+Adicionar constraint PostgreSQL para `Player.Position IN (1, 2)`. O container Web permanece não-root e passa a usar filesystem read-only, `/tmp` limitado, `no-new-privileges`, nenhuma Linux capability, limite de processos e 512 MiB de memória. Esses limites são proteção básica, não declaração de capacidade.
+
+## 2026-08-18 — Deploy isolado de produção
+
+A aplicação usa uma stack Compose própria e somente redes compartilhadas explicitamente necessárias: proxy e banco. Não publica portas no host, não controla containers de terceiros e usa banco/role dedicados com privilégios mínimos.
+
+Migrations são uma operação explícita (`--migrate`) antes do início da aplicação; startup normal não altera schema. O proxy confiável é limitado à subnet interna configurada, com um único salto encaminhado, e o host público é validado exatamente.
+
+O TLS termina no edge do Cloudflare Tunnel. O trecho interno até o proxy usa HTTP na rede privada Docker, seguindo a topologia já adotada pelo servidor. Estado ativo continua em memória e a aplicação permanece em instância única.

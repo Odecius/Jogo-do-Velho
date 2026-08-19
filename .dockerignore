@@ -1,0 +1,9 @@
+.git
+.gitignore
+.env
+**/bin
+**/obj
+TestResults
+storage
+README.md
+
